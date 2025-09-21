@@ -13,8 +13,9 @@
                     <div class="card-body">
                         <h5 class="card-title">Recruiter Features</h5>
                         <p class="card-text">Here you can post job openings, manage applications, and find candidates.</p>
-                        <a href="#" class="btn btn-primary">Post a Job</a>
-                        <a href="#" class="btn btn-outline-primary">View Applications</a>
+                        <a href="{% url 'jobs:add_job' %}" class="btn btn-primary">Post a Job</a>
+                        <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline-primary">My Jobs</a>
+                        <a href="{% url 'jobs:job_list' %}" class="btn btn-outline-secondary">Browse All Jobs</a>
                     </div>
                 </div>
             {% else %}
@@ -23,8 +24,8 @@
                     <div class="card-body">
                         <h5 class="card-title">Job Seeker Features</h5>
                         <p class="card-text">Here you can search for jobs, manage your profile, and apply to positions.</p>
-                        <a href="#" class="btn btn-primary">Browse Jobs</a>
-                        <a href="#" class="btn btn-outline-primary">Update Profile</a>
+                        <a href="{% url 'jobs:job_list' %}" class="btn btn-primary">Browse Jobs</a>
+                        <a href="{% url 'jobs:my_applications' %}" class="btn btn-outline-primary">My Applications</a>
                     </div>
                 </div>
             {% endif %}

@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}My Applications - Job Finder{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>My Job Applications</h2>
+                <a href="{% url 'jobs:job_list' %}" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Browse More Jobs
+                </a>
+            </div>
+
+            <div class="mb-3">
+                <a href="{% url 'jobs:job_list' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Back to All Jobs
+                </a>
+            </div>
+
+            {% if applications %}
+                <div class="row">
+                    {% for application in applications %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title">{{ application.job.title }}</h5>
+                                    {% if application.status == 'pending' %}
+                                        <span class="badge bg-warning">{{ application.get_status_display }}</span>
+                                    {% elif application.status == 'reviewed' %}
+                                        <span class="badge bg-info">{{ application.get_status_display }}</span>
+                                    {% elif application.status == 'interview' %}
+                                        <span class="badge bg-primary">{{ application.get_status_display }}</span>
+                                    {% elif application.status == 'accepted' %}
+                                        <span class="badge bg-success">{{ application.get_status_display }}</span>
+                                    {% elif application.status == 'rejected' %}
+                                        <span class="badge bg-danger">{{ application.get_status_display }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <h6 class="card-subtitle mb-2 text-muted">{{ application.job.company }}</h6>
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        {% if application.job.location %}{{ application.job.location }}{% else %}Remote{% endif %}
+                                        | <span class="badge bg-secondary">{{ application.job.get_work_type_display }}</span>
+                                    </small>
+                                </div>
+
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <strong>{{ application.job.get_salary_range }}</strong>
+                                    </small>
+                                </div>
+
+                                {% if application.cover_note %}
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <strong>Your note:</strong> "{{ application.cover_note|truncatewords:10 }}"
+                                    </small>
+                                </div>
+                                {% endif %}
+
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div>
+                                        <small class="text-muted">Applied {{ application.applied_at|timesince }} ago</small>
+                                        {% if application.updated_at != application.applied_at %}
+                                            <br>
+                                            <small class="text-muted">Updated {{ application.updated_at|timesince }} ago</small>
+                                        {% endif %}
+                                    </div>
+                                    <a href="{% url 'jobs:job_detail' application.job.id %}" class="btn btn-outline-primary btn-sm">
+                                        View Job
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Application Status Legend -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Application Status Guide</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-warning me-2">Pending</span>
+                                    <small>Your application has been submitted and is awaiting review</small>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-info me-2">Reviewed</span>
+                                    <small>Your application has been reviewed by the recruiter</small>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-primary me-2">Interview Scheduled</span>
+                                    <small>You've been selected for an interview</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-success me-2">Accepted</span>
+                                    <small>Congratulations! Your application has been accepted</small>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-danger me-2">Rejected</span>
+                                    <small>Unfortunately, your application was not selected</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-file-alt fa-4x text-muted"></i>
+                    </div>
+                    <h4>No applications yet</h4>
+                    <p class="text-muted">Start browsing jobs and apply to positions that match your skills and interests.</p>
+                    <a href="{% url 'jobs:job_list' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-search"></i> Browse Jobs
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
