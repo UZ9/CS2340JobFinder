@@ -16,9 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from recruiting import views as recruiting_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('home.urls')),
     path('recruiting/', include('recruiting.urls')),
+    # additional convenience route (misspelled) required by user
+    path('recruting/create', recruiting_views.create),
 ]

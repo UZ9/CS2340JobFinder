@@ -6,6 +6,29 @@
     <p class="lead">Browse active job listings</p>
   </div>
 </header>
+<div class="container py-3">
+  <div class="row">
+    <div class="col-12">
+      <div class="text-center mb-3">
+        <strong class="text-uppercase fs-3 fw-bold">browse open listings</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container mt-3">
+  <form method="get" class="d-flex justify-content-center">
+    <input name="q" class="form-control me-2" style="max-width:320px;" placeholder="Search job title..." value="{{ q|default_if_none:'' }}" />
+    <select name="sort" class="form-select me-2" style="max-width:220px;" onchange="this.form.submit()">
+      <option value="-posted_date" {% if request.GET.sort == "-posted_date" or not request.GET.sort %}selected{% endif %}>Newest</option>
+      <option value="title" {% if request.GET.sort == "title" %}selected{% endif %}>Title (A–Z)</option>
+      <option value="location" {% if request.GET.sort == "location" %}selected{% endif %}>Location</option>
+    </select>
+    <button class="btn btn-primary me-2" type="submit">Search</button>
+    <a href="{% url 'recruiting.index' %}" class="btn btn-outline-secondary">Clear</a>
+  </form>
+</div>
+
 <div class="container py-4">
   <div class="row">
     <div class="col-12">
