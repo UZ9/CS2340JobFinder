@@ -24,4 +24,5 @@ urlpatterns = [
     path('recruiting/', include('recruiting.urls')),
     # additional convenience route (misspelled) required by user
     path('recruting/create', recruiting_views.create),
+    path('recruting/edit', recruiting_views.edit),
 ]

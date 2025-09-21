@@ -42,3 +42,25 @@ def create(request):
         form = ListingForm()
 
     return render(request, 'recruiting/create.html', {'form': form, 'title': 'Create Listing'})
+
+
+def edit(request):
+    """Edit an existing Listing. Expects `id` GET param or POST param."""
+    listing_id = request.GET.get('id') or request.POST.get('id')
+    if not listing_id:
+        return redirect('recruiting.index')
+
+    try:
+        listing = Listing.objects.get(pk=listing_id)
+    except Listing.DoesNotExist:
+        return redirect('recruiting.index')
+
+    if request.method == 'POST':
+        form = ListingForm(request.POST, instance=listing)
+        if form.is_valid():
+            form.save()
+            return redirect('recruiting.index')
+    else:
+        form = ListingForm(instance=listing)
+
+    return render(request, 'recruiting/edit.html', {'form': form, 'title': 'Edit Listing', 'listing': listing})

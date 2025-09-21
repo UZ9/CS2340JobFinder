@@ -33,16 +33,25 @@
   <div class="row">
     <div class="col-12">
       {% if listings %}
-        <div class="list-group">
+        <div class="listings">
           {% for job in listings %}
-            <a href="#" class="list-group-item list-group-item-action mb-2">
+            <div class="mb-3 pb-2">
               <div class="d-flex w-100 justify-content-between">
                 <h5 class="mb-1">{{ job.title }}</h5>
                 <small class="text-muted">{{ job.posted_date|date:"M d, Y" }}</small>
               </div>
               <p class="mb-1">{{ job.company }} — {{ job.location }}</p>
+              {% if job.pay_range %}
+                <p class="mb-1 text-muted"><strong>Pay:</strong> {{ job.pay_range }}</p>
+              {% endif %}
               <small>{{ job.description|truncatechars:140 }}</small>
-            </a>
+              <div class="mt-2 text-end">
+                <a href="{% url 'recruiting.edit' %}?id={{ job.id }}" class="btn btn-sm btn-outline-primary">Edit</a>
+              </div>
+            </div>
+            {% if not forloop.last %}
+              <hr class="my-3" />
+            {% endif %}
           {% endfor %}
         </div>
       {% else %}
