@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Job Finder - Connect Talent with Opportunity{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="hero-content">
+                    <h1 class="hero-title">Job Finder</h1>
+                    <p class="hero-subtitle">Connect Talent with Opportunity</p>
+
+                    <div class="row justify-content-center">
+                        <div class="col-lg-5 col-md-6">
+                            <a href="{% url 'authentication:login' %}?user_type=recruiter" class="user-type-card recruiter-card">
+                                <div class="card-icon">👔</div>
+                                <h3 class="card-title">I'm a Recruiter</h3>
+                                <p class="card-description">
+                                    Post job openings, find qualified candidates, and build your team with the best talent.
+                                </p>
+                            </a>
+                        </div>
+
+                        <div class="col-lg-5 col-md-6">
+                            <a href="{% url 'authentication:login' %}?user_type=job_seeker" class="user-type-card job-seeker-card">
+                                <div class="card-icon">🎯</div>
+                                <h3 class="card-title">I'm a Job Seeker</h3>
+                                <p class="card-description">
+                                    Discover exciting opportunities, showcase your skills, and find your dream job.
+                                </p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h2 class="mb-4">Why Choose Job Finder?</h2>
+                <div class="row">
+                    <div class="col-md-4 mb-4">
+                        <div class="feature-item">
+                            <div class="feature-icon mb-3" style="font-size: 3rem; color: #007bff;">⚡</div>
+                            <h4>Fast & Easy</h4>
+                            <p>Quick registration process and intuitive interface for both recruiters and job seekers.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="feature-item">
+                            <div class="feature-icon mb-3" style="font-size: 3rem; color: #28a745;">🤝</div>
+                            <h4>Perfect Matches</h4>
+                            <p>Our smart matching system connects the right talent with the right opportunities.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="feature-item">
+                            <div class="feature-icon mb-3" style="font-size: 3rem; color: #ffc107;">🔒</div>
+                            <h4>Secure & Private</h4>
+                            <p>Your data is protected with enterprise-level security and privacy controls.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
