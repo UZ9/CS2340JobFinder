@@ -5,7 +5,7 @@ from .models import UserProfile
 
 
 class CustomUserCreationForm(UserCreationForm):
-    email = forms.EmailField(required=True)
+    email = forms.EmailField(required=True, widget=forms.TextInput(attrs={'placeholder': 'Email'}))
     user_type = forms.ChoiceField(choices=UserProfile.USER_TYPE_CHOICES, required=True)
 
     class Meta:
@@ -17,6 +17,8 @@ class CustomUserCreationForm(UserCreationForm):
         # Remove the username field since we'll use email as username
         if 'username' in self.fields:
             del self.fields['username']
+
+        self.fields['email'].label = "Email address"
 
         # Add CSS classes for better styling
         for field_name, field in self.fields.items():

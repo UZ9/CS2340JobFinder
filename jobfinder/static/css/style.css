@@ -319,3 +319,9 @@
         margin: 1rem;
     }
 }
+
+label.required::after {
+    content: ' *';
+    color: red;
+}
+

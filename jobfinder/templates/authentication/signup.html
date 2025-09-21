@@ -14,7 +14,7 @@
                         {% csrf_token %}
 
                         <div class="form-group">
-                            <label for="{{ form.email.id_for_label }}">Email:</label>
+                            <label class="required" for="{{ form.email.id_for_label }}">Email:</label>
                             {{ form.email }}
                             {% if form.email.errors %}
                                 <ul class="errorlist">
@@ -26,7 +26,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="{{ form.password1.id_for_label }}">Password:</label>
+                            <label class="required" for="{{ form.password1.id_for_label }}">Password:</label>
                             {{ form.password1 }}
                             {% if form.password1.errors %}
                                 <ul class="errorlist">
@@ -38,7 +38,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="{{ form.password2.id_for_label }}">Confirm Password:</label>
+                            <label class="required" for="{{ form.password2.id_for_label }}">Confirm Password:</label>
                             {{ form.password2 }}
                             {% if form.password2.errors %}
                                 <ul class="errorlist">
@@ -59,7 +59,7 @@
 
                     <div class="auth-links">
                         <p>Already have an account?
-                            <a href="{% url 'authentication:login' %}?user_type={{ user_type }}">Login as {{ user_type_display }}</a>
+                            <a href="{% url 'authentication:login' %}?user_type={{ user_type }}">Login</a>
                         </p>
                         <p>
                             <a href="{% url 'home:index' %}">← Back to Home</a>
