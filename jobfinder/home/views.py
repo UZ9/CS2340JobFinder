@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from profiles.models import Profile
 
 
 def home_page(request):
@@ -15,7 +16,17 @@ def home_page(request):
 @login_required
 def dashboard(request):
     """Dashboard page for authenticated users"""
-    return render(request, 'home/dashboard.html')
+    profile = None
+    visible_fields = None
+    if hasattr(request.user, 'profile'):
+        profile = request.user.profile
+        visible_fields = profile.get_visible_fields()
+    
+    context = {
+        'profile': profile,
+        'visible_fields': visible_fields
+    }
+    return render(request, 'home/dashboard.html', context)
 
 
 def user_type_selection(request):

@@ -1,0 +1,100 @@
+<div class="mb-5">
+    <h3 class="h5 text-primary mb-3">
+        <i class="fas fa-eye me-2"></i>What Recruiters See
+    </h3>
+    
+    {% if profile.show_headline and profile.headline %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Professional Headline</h4>
+        <p class="lead">{{ profile.headline }}</p>
+    </div>
+    {% endif %}
+
+    {% if profile.show_skills and profile.skills %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Skills</h4>
+        <p>{{ profile.skills|linebreaks }}</p>
+    </div>
+    {% endif %}
+
+    {% if profile.show_education and profile.education %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Education</h4>
+        <p>{{ profile.education|linebreaks }}</p>
+    </div>
+    {% endif %}
+
+    {% if profile.show_work_experience and profile.work_experience %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Work Experience</h4>
+        <p>{{ profile.work_experience|linebreaks }}</p>
+    </div>
+    {% endif %}
+
+    {% if profile.show_links and profile.links %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Professional Links</h4>
+        <div>
+            {{ profile.links|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not visible_fields %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Recruiters cannot see any of your profile information.</strong>
+            <br>Consider updating your privacy settings to make some information visible to recruiters.
+        </div>
+    {% endif %}
+</div>
+
+<div class="border-top pt-4">
+    <h3 class="h5 text-warning mb-3">
+        <i class="fas fa-eye-slash me-2"></i>Hidden Information
+    </h3>
+
+    {% if not profile.show_headline and profile.headline %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Professional Headline</h4>
+        <p class="lead">{{ profile.headline }}</p>
+    </div>
+    {% endif %}
+
+    {% if not profile.show_skills and profile.skills %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Skills</h4>
+        <p>{{ profile.skills|linebreaks }}</p>
+    </div>
+    {% endif %}
+
+    {% if not profile.show_education and profile.education %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Education</h4>
+        <p>{{ profile.education|linebreaks }}</p>
+    </div>
+    {% endif %}
+
+    {% if not profile.show_work_experience and profile.work_experience %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Work Experience</h4>
+        <p>{{ profile.work_experience|linebreaks }}</p>
+    </div>
+    {% endif %}
+
+    {% if not profile.show_links and profile.links %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Professional Links</h4>
+        <div>
+            {{ profile.links|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if profile.show_headline and profile.show_skills and profile.show_education and profile.show_work_experience and profile.show_links %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>All your profile information is currently visible to recruiters.</strong>
+        </div>
+    {% endif %}
+</div>

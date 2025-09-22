@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if is_edit %}Edit{% else %}Create{% endif %} Profile - JobFinder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-briefcase me-2"></i>JobFinder
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h2 class="mb-0">
+                            <i class="fas fa-user-edit me-2"></i>
+                            {% if is_edit %}Edit{% else %}Create{% endif %} Your Profile
+                        </h2>
+                        <p class="mb-0 mt-2">Help recruiters learn about you by filling out your professional information</p>
+                    </div>
+                    <div class="card-body">
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        <form method="post" class="needs-validation" novalidate>
+                            {% csrf_token %}
+                            
+                            {% for field in form %}
+                            <div class="mb-4">
+                                <label for="{{ field.id_for_label }}" class="form-label fw-bold">
+                                    {{ field.label }}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                <div class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>{{ field.help_text }}
+                                </div>
+                                {% endif %}
+                                {% if field.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ field.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                <strong>Privacy Note:</strong> After creating your profile, you can control what information recruiters can see using the Privacy Settings.
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{% url 'profiles:view_profile' %}" class="btn btn-secondary me-md-2">
+                                    <i class="fas fa-times me-1"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>
+                                    {% if is_edit %}Update{% else %}Create{% endif %} Profile
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
