@@ -151,12 +151,28 @@
             </a>
         </div>
     </div>
+
+    
+
+
+<div class="toast-container position-fixed top-0 end-0 p-3">
+  <div id="liveToast" class="toast bg-secondary text-white" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-body">
+      Success! Copied the job URL to your clipboard.
+    </div>
+  </div>
+</div>
+
+
+
 </div>
 
 <script>
 function copyJobUrl() {
     navigator.clipboard.writeText(window.location.href).then(function() {
-        alert('Job URL copied to clipboard!');
+      const toast = new bootstrap.Toast(document.getElementById('liveToast'));
+      toast.show();
+
     });
 }
 </script>

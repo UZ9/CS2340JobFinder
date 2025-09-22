@@ -91,7 +91,7 @@
                     <div class="btn-group" role="group">
                         <a href="{% url 'jobs:job_list' %}" class="btn btn-outline-primary active">All Jobs</a>
                         {% if user_type == 'recruiter' %}
-                            <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline-primary">My Jobs</a>
+                            <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline-primary">My Job Postings</a>
                             <a href="{% url 'jobs:add_job' %}" class="btn btn-success">+ Add Job</a>
                         {% elif user_type == 'job_seeker' %}
                             <a href="{% url 'jobs:my_applications' %}" class="btn btn-outline-primary">My Applications</a>
