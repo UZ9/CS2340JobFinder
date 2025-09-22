@@ -22,7 +22,7 @@ def create_profile(request):
                 form.save()
                 action = 'updated' if is_edit else 'created'
                 messages.success(request, f'Profile {action} successfully! Recruiters can now see your information based on your privacy settings.')
-                return redirect('view_profile')
+                return redirect('profiles:view_profile')
             except ValidationError as e:
                 messages.error(request, f'Error saving profile: {e}')
         else:
@@ -42,14 +42,14 @@ def privacy_settings(request):
         profile = request.user.profile
     except Profile.DoesNotExist:
         messages.warning(request, 'Please create your profile first before setting privacy options.')
-        return redirect('create_profile')
+        return redirect('profiles:create_profile')
     
     if request.method == 'POST':
         form = PrivacySettingsForm(request.POST, instance=profile)
         if form.is_valid():
             form.save()
             messages.success(request, 'Privacy settings updated successfully! Recruiters will now see only the information you have enabled.')
-            return redirect('view_profile')
+            return redirect('profiles:view_profile')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -66,7 +66,7 @@ def view_profile(request):
         profile = request.user.profile
     except Profile.DoesNotExist:
         messages.info(request, 'Please create your profile to get started.')
-        return redirect('create_profile')
+        return redirect('profiles:create_profile')
     
     # Get visible fields for recruiter view
     visible_fields = profile.get_visible_fields()

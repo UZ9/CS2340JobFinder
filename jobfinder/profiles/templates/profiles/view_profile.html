@@ -25,10 +25,10 @@
                             <i class="fas fa-user me-2"></i>My Profile
                         </h2>
                         <div>
-                            <a href="{% url 'create_profile' %}" class="btn btn-light btn-sm me-2">
+                            <a href="{% url 'profiles:create_profile' %}" class="btn btn-light btn-sm me-2">
                                 <i class="fas fa-edit me-1"></i>Edit Profile
                             </a>
-                            <a href="{% url 'privacy_settings' %}" class="btn btn-warning btn-sm">
+                            <a href="{% url 'profiles:privacy_settings' %}" class="btn btn-warning btn-sm">
                                 <i class="fas fa-shield-alt me-1"></i>Privacy Settings
                             </a>
                         </div>
@@ -97,15 +97,7 @@
                             <div class="mb-4">
                                 <h4 class="h6 text-muted">Professional Links</h4>
                                 <div>
-                                    {% for link in profile.links|linebreaksbr|split:"<br>" %}
-                                        {% if link.strip %}
-                                            <p class="mb-1">
-                                                <a href="{{ link.strip }}" target="_blank" class="text-decoration-none">
-                                                    <i class="fas fa-external-link-alt me-1"></i>{{ link.strip }}
-                                                </a>
-                                            </p>
-                                        {% endif %}
-                                    {% endfor %}
+                                    {{ profile.links|linebreaks }}
                                 </div>
                                 <small class="text-muted">
                                     <i class="fas fa-{% if profile.show_links %}check text-success{% else %}times text-danger{% endif %} me-1"></i>
