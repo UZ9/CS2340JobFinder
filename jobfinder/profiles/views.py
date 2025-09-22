@@ -22,7 +22,7 @@ def create_profile(request):
                 form.save()
                 action = 'updated' if is_edit else 'created'
                 messages.success(request, f'Profile {action} successfully! Recruiters can now see your information based on your privacy settings.')
-                return redirect('profiles:view_profile')
+                return redirect('home:dashboard')
             except ValidationError as e:
                 messages.error(request, f'Error saving profile: {e}')
         else:
@@ -49,7 +49,7 @@ def privacy_settings(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Privacy settings updated successfully! Recruiters will now see only the information you have enabled.')
-            return redirect('profiles:view_profile')
+            return redirect('home:dashboard')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:

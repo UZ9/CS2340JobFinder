@@ -22,7 +22,7 @@ def home(request):
     return render(request, 'home.html')
 
 urlpatterns = [
-    path('', home, name='home'),
+    path('alternatehome', home, name='home'),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('profiles/', include('profiles.urls', namespace='profiles')),
