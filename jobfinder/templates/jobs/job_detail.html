@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ job.title }} - Job Finder{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h2 class="mb-1">{{ job.title }}</h2>
+                            <h4 class="mb-0">{{ job.company }}</h4>
+                        </div>
+                        {% if job.visa_sponsorship %}
+                            <span class="badge bg-success fs-6">Visa Sponsorship Available</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <strong class="me-2">Location:</strong>
+                                <span>{% if job.location %}{{ job.location }}{% else %}Not specified{% endif %}</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <strong class="me-2">Work Type:</strong>
+                                <span class="badge bg-secondary">{{ job.get_work_type_display }}</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <strong class="me-2">Experience Level:</strong>
+                                <span class="badge bg-info">{{ job.get_experience_level_display }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <strong class="me-2">Salary:</strong>
+                                <span class="text-success fw-bold">{{ job.get_salary_range }}</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <strong class="me-2">Posted:</strong>
+                                <span>{{ job.created_at|timesince }} ago</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Required Skills</h5>
+                        <div>
+                            {% for skill in job.get_skills_list %}
+                                <span class="badge bg-light text-dark me-1 mb-1">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Job Description</h5>
+                        <div class="job-description">
+                            {{ job.description|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Job Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if user.is_authenticated %}
+                        {% if user_type == 'job_seeker' %}
+                            {% if has_applied %}
+                                <div class="alert alert-success" role="alert">
+                                    <i class="fas fa-check-circle"></i> You have already applied to this job!
+                                </div>
+                                <a href="{% url 'jobs:my_applications' %}" class="btn btn-outline-primary w-100">View My Applications</a>
+                            {% else %}
+                                <div class="d-grid gap-2">
+                                    <a href="{% url 'jobs:apply_to_job' job.id %}" class="btn btn-success btn-lg">
+                                        <i class="fas fa-paper-plane"></i> Apply Now
+                                    </a>
+                                    <small class="text-muted text-center">One-click application with personalized note</small>
+                                </div>
+                            {% endif %}
+                        {% elif user_type == 'recruiter' %}
+                            {% if job.recruiter.user_profile.user == user %}
+                                <div class="alert alert-info" role="alert">
+                                    This is your job posting
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <a href="{% url 'jobs:edit_job' job.id %}" class="btn btn-primary">
+                                        <i class="fas fa-edit"></i> Edit Job
+                                    </a>
+                                    <a href="{% url 'jobs:delete_job' job.id %}" class="btn btn-outline-danger">
+                                        <i class="fas fa-trash"></i> Delete Job
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-secondary" role="alert">
+                                    You can view this job but cannot apply as a recruiter.
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-warning" role="alert">
+                            Please log in to apply for this job.
+                        </div>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'authentication:login' %}" class="btn btn-primary">Login</a>
+                            <a href="{% url 'authentication:signup' %}" class="btn btn-outline-primary">Sign Up</a>
+                        </div>
+                    {% endif %}
+
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <h6>Share this job</h6>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="copyJobUrl()">
+                                <i class="fas fa-copy"></i> Copy Link
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Company Information</h6>
+                </div>
+                <div class="card-body">
+                    <h6>{{ job.company }}</h6>
+                    {% if job.recruiter.company_description %}
+                        <p class="text-muted small">{{ job.recruiter.company_description|truncatewords:30 }}</p>
+                    {% endif %}
+                    <small class="text-muted">Posted by: {{ job.recruiter.user_profile.user.get_full_name|default:job.recruiter.user_profile.user.username }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <a href="{% url 'jobs:job_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Jobs
+            </a>
+        </div>
+    </div>
+
+    
+
+
+<div class="toast-container position-fixed top-0 end-0 p-3">
+  <div id="liveToast" class="toast bg-secondary text-white" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-body">
+      Success! Copied the job URL to your clipboard.
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+<script>
+function copyJobUrl() {
+    navigator.clipboard.writeText(window.location.href).then(function() {
+      const toast = new bootstrap.Toast(document.getElementById('liveToast'));
+      toast.show();
+
+    });
+}
+</script>
+{% endblock %}

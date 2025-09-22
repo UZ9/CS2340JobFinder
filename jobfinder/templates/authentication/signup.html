@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up as {{ user_type_display }} - Job Finder{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-5">
+                <div class="auth-card">
+                    <h2 class="auth-title">{{ user_type_display }} Sign Up</h2>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="form-group">
+                            <label class="required" for="{{ form.email.id_for_label }}">Email:</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <ul class="errorlist">
+                                    {% for error in form.email.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="required" for="{{ form.password1.id_for_label }}">Password:</label>
+                            {{ form.password1 }}
+                            {% if form.password1.errors %}
+                                <ul class="errorlist">
+                                    {% for error in form.password1.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="required" for="{{ form.password2.id_for_label }}">Confirm Password:</label>
+                            {{ form.password2 }}
+                            {% if form.password2.errors %}
+                                <ul class="errorlist">
+                                    {% for error in form.password2.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+
+                        <!-- Hidden field for user_type -->
+                        {{ form.user_type.as_hidden }}
+
+                        <div class="d-grid gap-2 mb-3">
+                            <button type="submit" class="btn btn-primary">Create Account</button>
+                        </div>
+                    </form>
+
+                    <div class="auth-links">
+                        <p>Already have an account?
+                            <a href="{% url 'authentication:login' %}?user_type={{ user_type }}">Login</a>
+                        </p>
+                        <p>
+                            <a href="{% url 'home:index' %}">← Back to Home</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
