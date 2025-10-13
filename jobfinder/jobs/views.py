@@ -361,3 +361,80 @@ def my_applications(request):
     }
     
     return render(request, 'jobs/my_applications.html', context)
+
+
+@login_required
+def recommended_candidates(request, job_id):
+    """Show a list of candidates whose skills match the job description (for the job's recruiter)"""
+    # Ensure the requester is the recruiter who owns this job
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.user_type != 'recruiter':
+            messages.error(request, "Only recruiters can view recommended candidates.")
+            return redirect('jobs:my_jobs')
+        recruiter_profile = RecruiterProfile.objects.get(user_profile=user_profile)
+    except (UserProfile.DoesNotExist, RecruiterProfile.DoesNotExist):
+        messages.error(request, "Recruiter profile not found.")
+        return redirect('jobs:my_jobs')
+
+    job = get_object_or_404(Job, id=job_id, recruiter=recruiter_profile)
+
+    # Build job skill set by combining admin field and recruiter's visible profile skills
+    def tokenize(s):
+        return {tok.strip().lower() for tok in re.split(r"[,;/\\s]+", s) if tok.strip()}
+
+    poster_skills = ''
+    try:
+        recruiter_user = job.recruiter.user_profile.user
+        poster = UserProfileVisible.objects.filter(user=recruiter_user).first()
+        if poster and poster.skills and poster.show_skills:
+            poster_skills = poster.skills
+    except Exception:
+        poster_skills = ''
+
+    admin_skills = job.skills_required or ''
+    combined_raw = ','.join([s for s in (poster_skills, admin_skills) if s])
+    job_skill_set = tokenize(combined_raw)
+
+    # Collect candidates: users who have profiles with visible skills that overlap
+    candidates = []
+    # iterate over visible profiles that have skills
+    for profile in UserProfileVisible.objects.filter(show_skills=True).exclude(skills__isnull=True).exclude(skills__exact=''):
+        candidate_skills = tokenize(profile.skills)
+        overlap = len(job_skill_set & candidate_skills)
+        if overlap > 0:
+            # profile.user is a Django User; try to pull JobSeekerProfile for extra metadata
+            try:
+                js_profile = JobSeekerProfile.objects.filter(user_profile__user=profile.user).first()
+            except Exception:
+                js_profile = None
+            candidates.append((overlap, profile.user, js_profile, profile))
+
+    # sort by overlap desc, then by profile updated_at (newest first)
+    from datetime import datetime
+
+    def profile_updated(p):
+        return getattr(p, 'updated_at', None) or datetime.min
+
+    candidates.sort(key=lambda t: (t[0], profile_updated(t[3])), reverse=True)
+
+    # Build a simple context list with user, overlap, profile, js_profile and computed skills_list
+    recommended = []
+    for overlap, user_obj, js_profile, profile in candidates:
+        skills_list = []
+        if profile and profile.skills:
+            skills_list = [s.strip() for s in re.split(r"[,;/\\n]+", profile.skills) if s.strip()][:6]
+        recommended.append({
+            'user': user_obj,
+            'jobseeker_profile': js_profile,
+            'profile': profile,
+            'overlap': overlap,
+            'skills_list': skills_list,
+        })
+
+    context = {
+        'job': job,
+        'recommended': recommended,
+    }
+
+    return render(request, 'jobs/recommended_candidates.html', context)
