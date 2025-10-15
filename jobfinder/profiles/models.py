@@ -10,6 +10,8 @@ class Profile(models.Model):
     education = models.TextField(blank=True, help_text="Your educational background")
     work_experience = models.TextField(blank=True, help_text="Your work experience and achievements")
     links = models.TextField(blank=True, help_text="Professional links (LinkedIn, GitHub, Portfolio, etc.)")
+    location = models.CharField(max_length=200, blank=True, help_text="Your current location (e.g., 'New York, NY' or 'San Francisco, CA')")
+    projects = models.TextField(blank=True, help_text="Your projects with descriptions, technologies used, etc.")
 
     # Privacy settings - what recruiters can see
     show_headline = models.BooleanField(default=True, help_text="Show headline to recruiters")
@@ -17,14 +19,16 @@ class Profile(models.Model):
     show_education = models.BooleanField(default=True, help_text="Show education to recruiters")
     show_work_experience = models.BooleanField(default=True, help_text="Show work experience to recruiters")
     show_links = models.BooleanField(default=True, help_text="Show professional links to recruiters")
-    
+    show_location = models.BooleanField(default=True, help_text="Show location to recruiters")
+    show_projects = models.BooleanField(default=True, help_text="Show projects to recruiters")
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f'{self.user.username} Profile'
-    
+
     def get_visible_fields(self):
         """Return only the fields that are visible to recruiters based on privacy settings"""
         visible_data = {}
@@ -38,5 +42,9 @@ class Profile(models.Model):
             visible_data['work_experience'] = self.work_experience
         if self.show_links and self.links:
             visible_data['links'] = self.links
+        if self.show_location and self.location:
+            visible_data['location'] = self.location
+        if self.show_projects and self.projects:
+            visible_data['projects'] = self.projects
         return visible_data
 
