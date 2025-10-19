@@ -1,0 +1,717 @@
+{% extends 'base.html' %}
+
+{% block title %}Application Pipeline - {{ job.title }} - Job Finder{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-tasks me-2"></i>Application Pipeline</h2>
+                    <h4 class="text-muted">{{ job.title }} at {{ job.company }}</h4>
+                </div>
+                <div>
+                    <a href="{% url 'jobs:job_detail' job.id %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-eye"></i> View Job
+                    </a>
+                    <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to My Jobs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board">
+        <div class="row g-3">
+            <!-- Applied Column -->
+            <div class="col-lg">
+                <div class="kanban-column" data-status="applied">
+                    <div class="kanban-column-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-inbox"></i> Applied
+                            <span class="badge bg-light text-dark ms-2">{{ applications_by_status.applied.count }}</span>
+                        </h5>
+                    </div>
+                    <div class="kanban-column-body">
+                        {% for application in applications_by_status.applied %}
+                            {% include 'jobs/partials/application_card.html' with application=application %}
+                        {% empty %}
+                            <p class="text-muted text-center py-3">No applications</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review Column -->
+            <div class="col-lg">
+                <div class="kanban-column" data-status="review">
+                    <div class="kanban-column-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-search"></i> Review
+                            <span class="badge bg-light text-dark ms-2">{{ applications_by_status.review.count }}</span>
+                        </h5>
+                    </div>
+                    <div class="kanban-column-body">
+                        {% for application in applications_by_status.review %}
+                            {% include 'jobs/partials/application_card.html' with application=application %}
+                        {% empty %}
+                            <p class="text-muted text-center py-3">No applications</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interview Column -->
+            <div class="col-lg">
+                <div class="kanban-column" data-status="interview">
+                    <div class="kanban-column-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-tie"></i> Interview
+                            <span class="badge bg-dark text-white ms-2">{{ applications_by_status.interview.count }}</span>
+                        </h5>
+                    </div>
+                    <div class="kanban-column-body">
+                        {% for application in applications_by_status.interview %}
+                            {% include 'jobs/partials/application_card.html' with application=application %}
+                        {% empty %}
+                            <p class="text-muted text-center py-3">No applications</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Offer Column -->
+            <div class="col-lg">
+                <div class="kanban-column" data-status="offer">
+                    <div class="kanban-column-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-gift"></i> Offer
+                            <span class="badge bg-light text-dark ms-2">{{ applications_by_status.offer.count }}</span>
+                        </h5>
+                    </div>
+                    <div class="kanban-column-body">
+                        {% for application in applications_by_status.offer %}
+                            {% include 'jobs/partials/application_card.html' with application=application %}
+                        {% empty %}
+                            <p class="text-muted text-center py-3">No applications</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Closed Column -->
+            <div class="col-lg">
+                <div class="kanban-column" data-status="closed">
+                    <div class="kanban-column-header bg-secondary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-check-circle"></i> Closed
+                            <span class="badge bg-light text-dark ms-2">{{ applications_by_status.closed.count }}</span>
+                        </h5>
+                    </div>
+                    <div class="kanban-column-body">
+                        </button>
+                    </div>
+                    <div class="kanban-column-body">
+                        {% for application in applications_by_status.closed %}
+                            {% include 'jobs/partials/application_card.html' with application=application %}
+                        {% empty %}
+                            <p class="text-muted text-center py-3">No applications</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-comments"></i> Messages
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="messageContainer" style="height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin-bottom: 15px;">
+                    <!-- Messages will be loaded here -->
+                </div>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="messageInput" placeholder="Type your message..." onkeypress="if(event.key === 'Enter') sendMessage()">
+                    <button class="btn btn-primary" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-times-circle"></i> Reject Application
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="rejectionReason" class="form-label">Rejection Reason (Optional)</label>
+                    <textarea class="form-control" id="rejectionReason" rows="3" placeholder="Provide a reason for rejection..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmReject()">Reject Application</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.kanban-board {
+    overflow-x: auto;
+}
+
+.kanban-column {
+    background: #f8f9fa;
+    border-radius: 8px;
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.kanban-column-header {
+    padding: 15px;
+    border-radius: 8px 8px 0 0;
+    text-align: center;
+}
+
+.kanban-column-body {
+    padding: 10px;
+    flex-grow: 1;
+    min-height: 400px;
+}
+
+.application-card {
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    cursor: grab;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.application-card:active {
+    cursor: grabbing;
+}
+
+.application-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.application-card.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.kanban-column-body.drag-over {
+    background-color: #e3f2fd;
+    border: 2px dashed #2196F3;
+}
+
+.unread-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 10px;
+    height: 10px;
+    background-color: #dc3545;
+    border-radius: 50%;
+}
+</style>
+
+<script>
+let currentApplicationId = null;
+let currentCardElement = null;
+
+// Drag and Drop functionality
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initializing drag and drop...');
+    initializeDragAndDrop();
+    
+    // Refresh message counts periodically
+    setInterval(checkUnreadMessages, 30000); // Every 30 seconds
+});
+
+function initializeDragAndDrop() {
+    const cards = document.querySelectorAll('.application-card');
+    const columns = document.querySelectorAll('.kanban-column-body');
+    
+    console.log(`Found ${cards.length} cards and ${columns.length} columns`);
+    
+    cards.forEach(card => {
+        card.setAttribute('draggable', 'true');
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragend', handleDragEnd);
+    });
+    
+    columns.forEach(column => {
+        column.addEventListener('dragover', handleDragOver);
+        column.addEventListener('drop', handleDrop);
+        column.addEventListener('dragenter', handleDragEnter);
+        column.addEventListener('dragleave', handleDragLeave);
+    });
+}
+
+function handleDragStart(e) {
+    console.log('Drag started:', this.dataset.applicationId);
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', this.dataset.applicationId);
+    currentCardElement = this;
+}
+
+function handleDragEnd(e) {
+    console.log('Drag ended');
+    this.classList.remove('dragging');
+    
+    // Remove drag-over class from all columns
+    document.querySelectorAll('.kanban-column-body').forEach(col => {
+        col.classList.remove('drag-over');
+    });
+}
+
+function handleDragEnter(e) {
+    if (e.target.classList.contains('kanban-column-body')) {
+        e.target.classList.add('drag-over');
+    }
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault(); // Necessary to allow dropping
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragLeave(e) {
+    // Only remove class if we're leaving the column body, not just moving between children
+    if (e.target.classList.contains('kanban-column-body')) {
+        e.target.classList.remove('drag-over');
+    }
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation(); // Stops some browsers from redirecting
+    }
+    
+    e.preventDefault();
+    
+    const column = e.target.closest('.kanban-column-body');
+    if (!column) return;
+    
+    column.classList.remove('drag-over');
+    
+    const applicationId = e.dataTransfer.getData('text/plain');
+    const card = document.querySelector(`[data-application-id="${applicationId}"]`);
+    const newStatus = column.closest('.kanban-column').dataset.status;
+    
+    console.log(`Dropped application ${applicationId} into ${newStatus} column`);
+    
+    if (card) {
+        const oldStatus = card.closest('.kanban-column')?.dataset.status;
+        
+        // Only update if status actually changed
+        if (oldStatus !== newStatus) {
+            // Move card visually to the new column
+            column.appendChild(card);
+            
+            // Update the badge count in column headers
+            updateColumnCounts();
+            
+            // Automatically update status in database (without notifying)
+            updateApplicationStatus(applicationId, newStatus, false);
+            
+            console.log(`Status automatically updated to ${newStatus} (applicant not notified)`);
+        }
+    }
+    
+    return false;
+}
+
+function updateColumnCounts() {
+    const columns = document.querySelectorAll('.kanban-column');
+    columns.forEach(column => {
+        const status = column.dataset.status;
+        const columnBody = column.querySelector('.kanban-column-body');
+        const cards = columnBody.querySelectorAll('.application-card');
+        const cardCount = cards.length;
+        
+        // Update badge count in header
+        const badge = column.querySelector('.kanban-column-header .badge');
+        if (badge) {
+            badge.textContent = cardCount;
+        }
+        
+        // Remove or add "No applications" message
+        let emptyMessage = columnBody.querySelector('.text-muted.text-center');
+        
+        if (cardCount === 0) {
+            // Add empty message if it doesn't exist
+            if (!emptyMessage) {
+                emptyMessage = document.createElement('p');
+                emptyMessage.className = 'text-muted text-center py-3';
+                emptyMessage.textContent = 'No applications';
+                columnBody.appendChild(emptyMessage);
+            }
+        } else {
+            // Remove empty message if it exists
+            if (emptyMessage) {
+                emptyMessage.remove();
+            }
+        }
+    });
+}
+
+function updateApplicationStatus(applicationId, newStatus, notify = false) {
+    console.log(`Updating application ${applicationId} to status ${newStatus}, notify: ${notify}`);
+    
+    fetch('{% url "jobs:ajax_update_status" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            application_id: applicationId,
+            status: newStatus,
+            notify: notify
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Update response:', data);
+        if (data.success) {
+            console.log(`Successfully updated application ${applicationId} to ${newStatus}`);
+            console.log(`  - status: ${data.status}`);
+            console.log(`  - notified: ${data.notified}`);
+            console.log(`  - notified_status: ${data.notified_status}`);
+            
+            // Show success message for notifications
+            if (notify) {
+                // Create a temporary success message
+                const card = document.querySelector(`[data-application-id="${applicationId}"]`);
+                if (card) {
+                    const successMsg = document.createElement('div');
+                    successMsg.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                    successMsg.style.top = '20px';
+                    successMsg.style.right = '20px';
+                    successMsg.style.zIndex = '9999';
+                    successMsg.innerHTML = `
+                        <i class="fas fa-check-circle"></i> Applicant notified successfully!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.body.appendChild(successMsg);
+                    setTimeout(() => successMsg.remove(), 3000);
+                }
+            }
+            
+            // Update notification badge
+            const card = document.querySelector(`[data-application-id="${applicationId}"]`);
+            if (card) {
+                const badge = card.querySelector('.notification-status');
+                if (badge) {
+                    badge.className = 'notification-status badge ' + (data.notified ? 'bg-success' : 'bg-warning');
+                    badge.textContent = data.notified ? 'Notified' : 'Pending';
+                }
+            }
+        } else {
+            console.error('Update failed:', data.error);
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating status:', error);
+        alert('Failed to update status: ' + error.message);
+    });
+}
+
+function notifyApplicant(buttonElement) {
+    // Get the card element
+    const card = buttonElement.closest('.application-card');
+    if (!card) {
+        console.error('Could not find application card');
+        return;
+    }
+    
+    // Get application ID from card
+    const applicationId = card.dataset.applicationId;
+    if (!applicationId) {
+        console.error('Could not find application ID');
+        return;
+    }
+    
+    // Get the current column to determine the current status
+    const column = card.closest('.kanban-column');
+    if (!column) {
+        console.error('Could not find kanban column');
+        return;
+    }
+    
+    const currentStatus = column.dataset.status;
+    if (!currentStatus) {
+        console.error('Could not find column status');
+        return;
+    }
+    
+    console.log(`Notifying applicant for application ${applicationId} with status ${currentStatus}`);
+    
+    // Call updateApplicationStatus with notify=true and the CURRENT column status
+    updateApplicationStatus(applicationId, currentStatus, true);
+}
+
+function batchUpdateStatus(status) {
+    const column = document.querySelector(`.kanban-column[data-status="${status}"]`);
+    const cards = column.querySelectorAll('.application-card');
+    const applicationIds = Array.from(cards).map(card => card.dataset.applicationId);
+    
+    if (applicationIds.length === 0) {
+        alert('No applications to notify in this column');
+        return;
+    }
+    
+    if (!confirm(`Send notifications to all ${applicationIds.length} applicants in this column about their current status?`)) {
+        return;
+    }
+    
+    fetch('{% url "jobs:ajax_batch_update" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            application_ids: applicationIds,
+            status: status
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Successfully notified ${data.updated_count} applicants`);
+            
+            // Update all cards in this column to show "Notified" status
+            cards.forEach(card => {
+                const badge = card.querySelector('.notification-status');
+                if (badge) {
+                    badge.className = 'notification-status badge bg-success';
+                    badge.textContent = 'Notified';
+                }
+            });
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to send notifications');
+    });
+}
+
+function openMessages(applicationId) {
+    console.log('Opening messages for application:', applicationId);
+    currentApplicationId = applicationId;
+    
+    fetch(`{% url 'jobs:ajax_messages' 0 %}`.replace('0', applicationId))
+    .then(response => {
+        console.log('Message fetch response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Message data:', data);
+        if (data.success) {
+            displayMessages(data.messages);
+            const modalElement = document.getElementById('messageModal');
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            } else {
+                console.error('Message modal element not found!');
+                alert('Error: Message modal not found');
+            }
+        } else {
+            console.error('Failed to load messages:', data.error);
+            alert('Error loading messages: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching messages:', error);
+        alert('Failed to load messages: ' + error.message);
+    });
+}
+
+function displayMessages(messages) {
+    console.log('Displaying', messages.length, 'messages');
+    const container = document.getElementById('messageContainer');
+    if (!container) {
+        console.error('Message container not found!');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    if (messages.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">No messages yet. Start the conversation!</p>';
+        return;
+    }
+    
+    messages.forEach(msg => {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${msg.is_own ? 'own-message' : 'other-message'}`;
+        msgDiv.innerHTML = `
+            <div class="message-header">
+                <strong>${msg.sender}</strong>
+                <small class="text-muted">${msg.created_at}</small>
+            </div>
+            <div class="message-content">${msg.content}</div>
+        `;
+        container.appendChild(msgDiv);
+    });
+    
+    container.scrollTop = container.scrollHeight;
+}
+
+function sendMessage() {
+    console.log('Sending message for application:', currentApplicationId);
+    const input = document.getElementById('messageInput');
+    const content = input.value.trim();
+    
+    if (!content) {
+        console.warn('Message content is empty');
+        return;
+    }
+    
+    if (!currentApplicationId) {
+        console.error('No application ID set');
+        alert('Error: No application selected');
+        return;
+    }
+    
+    fetch('{% url "jobs:ajax_send_message" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            application_id: currentApplicationId,
+            content: content
+        })
+    })
+    .then(response => {
+        console.log('Send message response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Send message data:', data);
+        if (data.success) {
+            input.value = '';
+            openMessages(currentApplicationId); // Refresh messages
+        } else {
+            console.error('Failed to send message:', data.error);
+            alert('Error: ' + (data.error || 'Failed to send message'));
+        }
+    })
+    .catch(error => {
+        console.error('Error sending message:', error);
+        alert('Failed to send message: ' + error.message);
+    });
+}
+
+function openRejectModal(applicationId, cardElement) {
+    currentApplicationId = applicationId;
+    currentCardElement = cardElement;
+    const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    modal.show();
+}
+
+function confirmReject() {
+    const reason = document.getElementById('rejectionReason').value;
+    
+    fetch('{% url "jobs:ajax_delete_application" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            application_id: currentApplicationId,
+            rejection_reason: reason
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (currentCardElement) {
+                currentCardElement.remove();
+            }
+            bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
+            alert('Application rejected successfully');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to reject application');
+    });
+}
+
+function checkUnreadMessages() {
+    // Update unread message badges (implementation depends on your needs)
+}
+</script>
+
+<style>
+.message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.own-message {
+    background-color: #007bff;
+    color: white;
+    margin-left: 20%;
+    text-align: right;
+}
+
+.other-message {
+    background-color: #e9ecef;
+    margin-right: 20%;
+}
+
+.message-header {
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.message-content {
+    word-wrap: break-word;
+}
+</style>
+{% endblock %}

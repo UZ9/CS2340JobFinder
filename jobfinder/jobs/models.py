@@ -57,19 +57,24 @@ class Job(models.Model):
 
 class JobApplication(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('reviewed', 'Reviewed'),
-        ('interview', 'Interview Scheduled'),
-        ('accepted', 'Accepted'),
+        ('applied', 'Applied'),
+        ('review', 'Under Review'),
+        ('interview', 'Interview'),
+        ('offer', 'Offer Extended'),
+        ('closed', 'Closed'),
         ('rejected', 'Rejected'),
     ]
 
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='applications')
     applicant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='job_applications')
     cover_note = models.TextField(blank=True, null=True, help_text="Personalized note for the application")
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='applied')
+    notified_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='applied', help_text="Last status notified to applicant")
+    rejection_reason = models.TextField(blank=True, null=True, help_text="Reason for rejection")
     applied_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    status_updated_at = models.DateTimeField(auto_now=True)
+    notified = models.BooleanField(default=True, help_text="Whether applicant has been notified of current status")
 
     class Meta:
         unique_together = ('job', 'applicant')  # Prevent duplicate applications
@@ -77,3 +82,40 @@ class JobApplication(models.Model):
 
     def __str__(self):
         return f"{self.applicant.username} applied to {self.job.title}"
+    
+    def get_display_status(self):
+        """Return the status that should be displayed to applicant (last notified status)"""
+        return self.notified_status
+    
+    def get_display_status_display(self):
+        """Return the display name for the notified status"""
+        for code, display in self.STATUS_CHOICES:
+            if code == self.notified_status:
+                return display
+        return 'Applied'
+    
+    def get_status_badge_class(self):
+        """Return Bootstrap badge class based on notified status for applicants"""
+        status_classes = {
+            'applied': 'bg-info',
+            'review': 'bg-primary',
+            'interview': 'bg-warning',
+            'offer': 'bg-success',
+            'closed': 'bg-secondary',
+            'rejected': 'bg-danger',
+        }
+        return status_classes.get(self.notified_status, 'bg-secondary')
+
+
+class Message(models.Model):
+    application = models.ForeignKey(JobApplication, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Message from {self.sender.username} on {self.application}"

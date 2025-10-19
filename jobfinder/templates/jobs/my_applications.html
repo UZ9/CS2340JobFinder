@@ -27,17 +27,9 @@
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <h5 class="card-title">{{ application.job.title }}</h5>
-                                    {% if application.status == 'pending' %}
-                                        <span class="badge bg-warning">{{ application.get_status_display }}</span>
-                                    {% elif application.status == 'reviewed' %}
-                                        <span class="badge bg-info">{{ application.get_status_display }}</span>
-                                    {% elif application.status == 'interview' %}
-                                        <span class="badge bg-primary">{{ application.get_status_display }}</span>
-                                    {% elif application.status == 'accepted' %}
-                                        <span class="badge bg-success">{{ application.get_status_display }}</span>
-                                    {% elif application.status == 'rejected' %}
-                                        <span class="badge bg-danger">{{ application.get_status_display }}</span>
-                                    {% endif %}
+                                    <span class="badge {{ application.get_status_badge_class }}">
+                                        {{ application.get_display_status_display }}
+                                    </span>
                                 </div>
                                 
                                 <h6 class="card-subtitle mb-2 text-muted">{{ application.job.company }}</h6>
@@ -62,18 +54,34 @@
                                     </small>
                                 </div>
                                 {% endif %}
+                                
+                                {% if application.notified_status == 'rejected' and application.rejection_reason %}
+                                <div class="alert alert-danger mb-2 py-2">
+                                    <small>
+                                        <strong><i class="fas fa-info-circle"></i> Rejection Reason:</strong><br>
+                                        {{ application.rejection_reason }}
+                                    </small>
+                                </div>
+                                {% endif %}
 
                                 <div class="d-flex justify-content-between align-items-center mt-3">
                                     <div>
                                         <small class="text-muted">Applied {{ application.applied_at|timesince }} ago</small>
-                                        {% if application.updated_at != application.applied_at %}
+                                        {% if application.status_updated_at != application.applied_at %}
                                             <br>
-                                            <small class="text-muted">Updated {{ application.updated_at|timesince }} ago</small>
+                                            <small class="text-muted">
+                                                <i class="fas fa-sync"></i> Last updated {{ application.status_updated_at|timesince }} ago
+                                            </small>
                                         {% endif %}
                                     </div>
-                                    <a href="{% url 'jobs:job_detail' application.job.id %}" class="btn btn-outline-primary btn-sm">
-                                        View Job
-                                    </a>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-primary" onclick="openJobSeekerMessages({{ application.id }})" title="Messages">
+                                            <i class="fas fa-comments"></i> Messages
+                                        </button>
+                                        <a href="{% url 'jobs:job_detail' application.job.id %}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-eye"></i> View Job
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -88,28 +96,34 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="d-flex align-items-center mb-2">
-                                    <span class="badge bg-warning me-2">Pending</span>
-                                    <small>Your application has been submitted and is awaiting review</small>
+                                    <span class="badge bg-info me-2">Applied</span>
+                                    <small>Your application has been submitted</small>
                                 </div>
                                 <div class="d-flex align-items-center mb-2">
-                                    <span class="badge bg-info me-2">Reviewed</span>
-                                    <small>Your application has been reviewed by the recruiter</small>
-                                </div>
-                                <div class="d-flex align-items-center mb-2">
-                                    <span class="badge bg-primary me-2">Interview Scheduled</span>
-                                    <small>You've been selected for an interview</small>
+                                    <span class="badge bg-primary me-2">Review</span>
+                                    <small>Application is under review</small>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="d-flex align-items-center mb-2">
-                                    <span class="badge bg-success me-2">Accepted</span>
-                                    <small>Congratulations! Your application has been accepted</small>
+                                    <span class="badge bg-warning me-2">Interview</span>
+                                    <small>You've been selected for an interview</small>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-success me-2">Offer</span>
+                                    <small>Congratulations! You've received an offer</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-secondary me-2">Closed</span>
+                                    <small>Application process is complete</small>
                                 </div>
                                 <div class="d-flex align-items-center mb-2">
                                     <span class="badge bg-danger me-2">Rejected</span>
-                                    <small>Unfortunately, your application was not selected</small>
+                                    <small>Application was not selected</small>
                                 </div>
                             </div>
                         </div>
@@ -130,4 +144,154 @@
         </div>
     </div>
 </div>
+
+<!-- Message Modal for Job Seekers -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-comments"></i> Messages with Recruiter
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="messageContainer" style="height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin-bottom: 15px; background-color: #f8f9fa;">
+                    <!-- Messages will be loaded here -->
+                </div>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="messageInput" placeholder="Type your message...">
+                    <button class="btn btn-primary" onclick="sendJobSeekerMessage()">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 8px;
+    max-width: 75%;
+}
+
+.own-message {
+    background-color: #007bff;
+    color: white;
+    margin-left: auto;
+    text-align: right;
+}
+
+.other-message {
+    background-color: white;
+    border: 1px solid #dee2e6;
+    margin-right: auto;
+}
+
+.message-header {
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.message-content {
+    word-wrap: break-word;
+}
+</style>
+
+<script>
+let currentApplicationId = null;
+
+function openJobSeekerMessages(applicationId) {
+    currentApplicationId = applicationId;
+    
+    fetch(`{% url 'jobs:ajax_messages' 0 %}`.replace('0', applicationId))
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayMessages(data.messages);
+            const modal = new bootstrap.Modal(document.getElementById('messageModal'));
+            modal.show();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to load messages');
+    });
+}
+
+function displayMessages(messages) {
+    const container = document.getElementById('messageContainer');
+    container.innerHTML = '';
+    
+    if (messages.length === 0) {
+        container.innerHTML = '<p class="text-center text-muted">No messages yet. Start a conversation with the recruiter!</p>';
+        return;
+    }
+    
+    messages.forEach(msg => {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${msg.is_own ? 'own-message' : 'other-message'}`;
+        msgDiv.innerHTML = `
+            <div class="message-header">
+                <strong>${msg.sender}</strong>
+                <small class="text-muted">${msg.created_at}</small>
+            </div>
+            <div class="message-content">${msg.content}</div>
+        `;
+        container.appendChild(msgDiv);
+    });
+    
+    container.scrollTop = container.scrollHeight;
+}
+
+function sendJobSeekerMessage() {
+    const input = document.getElementById('messageInput');
+    const content = input.value.trim();
+    
+    if (!content) {
+        alert('Please enter a message');
+        return;
+    }
+    
+    fetch('{% url "jobs:ajax_send_message" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            application_id: currentApplicationId,
+            content: content
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            input.value = '';
+            openJobSeekerMessages(currentApplicationId); // Refresh messages
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to send message');
+    });
+}
+
+// Allow Enter key to send message
+document.addEventListener('DOMContentLoaded', function() {
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendJobSeekerMessage();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
