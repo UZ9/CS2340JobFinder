@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_saved_search %}{{ saved_search.name }} - {% endif %}Search Results - Job Finder{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-search me-2"></i>
+                        {% if is_saved_search %}
+                            {{ saved_search.name }}
+                        {% else %}
+                            Search Results
+                        {% endif %}
+                    </h3>
+                    {% if is_saved_search %}
+                        <p class="mb-0 mt-2">
+                            <small>
+                                {% if saved_search.search_query %}
+                                    Keywords: {{ saved_search.search_query }} |
+                                {% endif %}
+                                {% if saved_search.location %}
+                                    Location: {{ saved_search.location }} |
+                                {% endif %}
+                                {% if saved_search.skills %}
+                                    Skills: {{ saved_search.skills }}
+                                {% endif %}
+                            </small>
+                        </p>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if candidates %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Found {{ candidates.count }} matching candidate{{ candidates.count|pluralize }}.
+                        </div>
+                        
+                        <div class="row">
+                            {% for profile in candidates %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h5 class="card-title">
+                                                {{ profile.user.get_full_name|default:profile.user.username }}
+                                            </h5>
+                                            
+                                            {% if profile.show_headline and profile.headline %}
+                                                <p class="text-muted mb-2">
+                                                    <i class="fas fa-briefcase me-1"></i>{{ profile.headline }}
+                                                </p>
+                                            {% endif %}
+                                            
+                                            {% if profile.show_location and profile.location %}
+                                                <p class="mb-2">
+                                                    <i class="fas fa-map-marker-alt me-1"></i>{{ profile.location }}
+                                                </p>
+                                            {% endif %}
+                                            
+                                            {% if profile.show_skills and profile.skills %}
+                                                <p class="mb-2">
+                                                    <strong>Skills:</strong><br>
+                                                    <small>{{ profile.skills|truncatewords:15 }}</small>
+                                                </p>
+                                            {% endif %}
+                                            
+                                            <div class="mt-3">
+                                                <a href="{% url 'profiles:view_profile_public' profile.user.id %}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-user me-1"></i>View Full Profile
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer text-muted small">
+                                            Last updated: {{ profile.updated_at|date:"M d, Y" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No candidates found matching your search criteria. Try adjusting your filters.
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        {% if is_saved_search %}
+                            <a href="{% url 'profiles:saved_searches_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Saved Searches
+                            </a>
+                        {% else %}
+                            <a href="{% url 'profiles:search_candidates' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Search
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

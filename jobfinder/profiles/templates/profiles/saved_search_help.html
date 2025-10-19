@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Saved Search Help - Job Finder{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-question-circle me-2"></i>Saved Search Help Guide
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <section class="mb-4">
+                        <h4>What are Saved Searches?</h4>
+                        <p>
+                            Saved Searches allow you to save your candidate search criteria so you don't have to 
+                            enter the same filters repeatedly. You can also enable notifications to be alerted when 
+                            new candidates match your saved criteria.
+                        </p>
+                    </section>
+
+                    <section class="mb-4">
+                        <h4>How to Create a Saved Search</h4>
+                        <ol>
+                            <li>Click <strong>"New Search"</strong> from the Saved Searches page</li>
+                            <li>Give your search a descriptive name (e.g., "Senior Python Developers in NYC")</li>
+                            <li>Fill in your search criteria:
+                                <ul>
+                                    <li><strong>General Keywords:</strong> Searches across all candidate profile fields</li>
+                                    <li><strong>Location:</strong> Filter by specific location</li>
+                                    <li><strong>Skills:</strong> Enter comma-separated skills (e.g., "Python, Django, React")</li>
+                                    <li><strong>Project Keywords:</strong> Search for specific project types or technologies</li>
+                                </ul>
+                            </li>
+                            <li>Check <strong>"Enable Notifications"</strong> if you want to be notified about new matches</li>
+                            <li>Click <strong>"Create Search"</strong></li>
+                        </ol>
+                    </section>
+
+                    <section class="mb-4">
+                        <h4>Search Tips</h4>
+                        <div class="alert alert-info">
+                            <ul class="mb-0">
+                                <li>You must provide at least one search criterion</li>
+                                <li>Skills are matched with OR logic - candidates with ANY of the listed skills will match</li>
+                                <li>Keywords search across multiple fields simultaneously</li>
+                                <li>Location matching is flexible - "New York" will match "New York, NY"</li>
+                                <li>Searches respect candidate privacy settings - only visible fields are searchable</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section class="mb-4">
+                        <h4>Managing Your Saved Searches</h4>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5><i class="fas fa-play text-primary me-2"></i>Run Search</h5>
+                                        <p class="small mb-0">Execute the search to find current matches</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5><i class="fas fa-edit text-secondary me-2"></i>Edit Search</h5>
+                                        <p class="small mb-0">Update search criteria or toggle notifications</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5><i class="fas fa-trash text-danger me-2"></i>Delete Search</h5>
+                                        <p class="small mb-0">Remove a saved search you no longer need</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="mb-4">
+                        <h4>Notifications</h4>
+                        <p>
+                            When notifications are enabled for a saved search, you'll receive alerts when:
+                        </p>
+                        <ul>
+                            <li>A new candidate profile is created that matches your criteria</li>
+                            <li>An existing candidate updates their profile to match your criteria</li>
+                        </ul>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> You'll only be notified once per candidate per search. 
+                            If a candidate continues to match your search, you won't receive duplicate notifications.
+                        </div>
+                    </section>
+
+                    <section class="mb-4">
+                        <h4>Example Searches</h4>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Search Name</th>
+                                        <th>Keywords</th>
+                                        <th>Location</th>
+                                        <th>Skills</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Senior Backend Developers</td>
+                                        <td>senior, backend</td>
+                                        <td></td>
+                                        <td>Python, Django, PostgreSQL</td>
+                                    </tr>
+                                    <tr>
+                                        <td>NYC Full Stack Engineers</td>
+                                        <td>full stack</td>
+                                        <td>New York</td>
+                                        <td>JavaScript, React, Node.js</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Data Scientists - ML Focus</td>
+                                        <td>machine learning, data science</td>
+                                        <td></td>
+                                        <td>Python, TensorFlow, scikit-learn</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <div class="text-center mt-4">
+                        <a href="{% url 'profiles:saved_searches_list' %}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Saved Searches
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

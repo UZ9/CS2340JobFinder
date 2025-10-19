@@ -33,7 +33,7 @@
                                 <h4 class="h5 text-primary">{{ field_name|title }}</h4>
                                 {% if field_name == 'links' %}
                                     <div>
-                                        {% for link in field_value|linebreaksbr|split:"<br>" %}
+                                        {% for link in field_value.splitlines %}
                                             {% if link.strip %}
                                                 <p class="mb-2">
                                                     <a href="{{ link.strip }}" target="_blank" class="btn btn-outline-primary btn-sm">
