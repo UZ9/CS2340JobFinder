@@ -25,6 +25,12 @@ class CustomUserCreationForm(UserCreationForm):
             field.widget.attrs['class'] = 'form-control'
             field.widget.attrs['placeholder'] = field.label
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email and User.objects.filter(email=email).exists():
+            raise forms.ValidationError("A user with this email address already exists.")
+        return email
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.username = self.cleaned_data["email"]

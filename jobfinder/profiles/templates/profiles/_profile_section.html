@@ -2,7 +2,7 @@
     <h3 class="h5 text-primary mb-3">
         <i class="fas fa-eye me-2"></i>What Recruiters See
     </h3>
-    
+
     {% if profile.show_headline and profile.headline %}
     <div class="mb-4">
         <h4 class="h6 text-muted">Professional Headline</h4>
@@ -10,10 +10,24 @@
     </div>
     {% endif %}
 
+    {% if profile.show_location and profile.location %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Location</h4>
+        <p><i class="fas fa-map-marker-alt me-2"></i>{{ profile.location }}</p>
+    </div>
+    {% endif %}
+
     {% if profile.show_skills and profile.skills %}
     <div class="mb-4">
         <h4 class="h6 text-muted">Skills</h4>
         <p>{{ profile.skills|linebreaks }}</p>
+    </div>
+    {% endif %}
+
+    {% if profile.show_projects and profile.projects %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Projects</h4>
+        <p>{{ profile.projects|linebreaks }}</p>
     </div>
     {% endif %}
 
@@ -61,10 +75,24 @@
     </div>
     {% endif %}
 
+    {% if not profile.show_location and profile.location %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Location</h4>
+        <p><i class="fas fa-map-marker-alt me-2"></i>{{ profile.location }}</p>
+    </div>
+    {% endif %}
+
     {% if not profile.show_skills and profile.skills %}
     <div class="mb-4">
         <h4 class="h6 text-muted">Skills</h4>
         <p>{{ profile.skills|linebreaks }}</p>
+    </div>
+    {% endif %}
+
+    {% if not profile.show_projects and profile.projects %}
+    <div class="mb-4">
+        <h4 class="h6 text-muted">Projects</h4>
+        <p>{{ profile.projects|linebreaks }}</p>
     </div>
     {% endif %}
 
@@ -91,7 +119,7 @@
     </div>
     {% endif %}
 
-    {% if profile.show_headline and profile.show_skills and profile.show_education and profile.show_work_experience and profile.show_links %}
+    {% if profile.show_headline and profile.show_skills and profile.show_education and profile.show_work_experience and profile.show_links and profile.show_location and profile.show_projects %}
         <div class="alert alert-info">
             <i class="fas fa-info-circle me-2"></i>
             <strong>All your profile information is currently visible to recruiters.</strong>

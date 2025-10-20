@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}My Saved Searches - Job Finder{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-save me-2"></i>My Saved Searches
+                    </h3>
+                    <div>
+                        <a href="{% url 'profiles:saved_search_notifications' %}" class="btn btn-light btn-sm me-2">
+                            <i class="fas fa-bell me-1"></i>Notifications
+                        </a>
+                        <a href="{% url 'profiles:create_saved_search' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-plus me-1"></i>New Search
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if saved_searches %}
+                        <div class="list-group">
+                            {% for search in saved_searches %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h5 class="mb-1">
+                                                {{ search.name }}
+                                                {% if search.notification_enabled %}
+                                                    <span class="badge bg-success ms-2">
+                                                        <i class="fas fa-bell"></i> Notifications ON
+                                                    </span>
+                                                {% endif %}
+                                            </h5>
+                                            <div class="text-muted small mb-2">
+                                                <i class="far fa-clock"></i> Created {{ search.created_at|date:"M d, Y" }}
+                                                {% if search.last_notified %}
+                                                    | Last notified {{ search.last_notified|date:"M d, Y" }}
+                                                {% endif %}
+                                            </div>
+                                            <div class="mb-2">
+                                                {% if search.search_query %}
+                                                    <span class="badge bg-info me-1">
+                                                        <i class="fas fa-search"></i> {{ search.search_query }}
+                                                    </span>
+                                                {% endif %}
+                                                {% if search.location %}
+                                                    <span class="badge bg-secondary me-1">
+                                                        <i class="fas fa-map-marker-alt"></i> {{ search.location }}
+                                                    </span>
+                                                {% endif %}
+                                                {% if search.skills %}
+                                                    <span class="badge bg-primary me-1">
+                                                        <i class="fas fa-code"></i> {{ search.skills }}
+                                                    </span>
+                                                {% endif %}
+                                                {% if search.projects %}
+                                                    <span class="badge bg-warning text-dark me-1">
+                                                        <i class="fas fa-project-diagram"></i> {{ search.projects }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="btn-group ms-3">
+                                            <a href="{% url 'profiles:execute_saved_search' search.id %}" 
+                                               class="btn btn-sm btn-primary" title="Run Search">
+                                                <i class="fas fa-play"></i>
+                                            </a>
+                                            <a href="{% url 'profiles:edit_saved_search' search.id %}" 
+                                               class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'profiles:delete_saved_search' search.id %}" 
+                                               class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            You haven't saved any searches yet. 
+                            <a href="{% url 'profiles:create_saved_search' %}" class="alert-link">Create your first saved search</a> 
+                            to get notified about new candidate matches.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -13,9 +13,13 @@
                     <div class="card-body">
                         <h5 class="card-title">Recruiter Features</h5>
                         <p class="card-text">Here you can post job openings, manage applications, and find candidates.</p>
-                        <a href="{% url 'jobs:add_job' %}" class="btn btn-primary">Post a Job</a>
-                        <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline-primary">My Job Postings</a>
-                        <a href="{% url 'jobs:job_list' %}" class="btn btn-outline-secondary">Browse All Jobs</a>
+                        <a href="{% url 'jobs:add_job' %}" class="btn btn-primary">POST A JOB</a>
+                        <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline-primary">MY JOB POSTINGS</a>
+                        <a href="{% url 'home:search_candidates' %}" class="btn btn-outline-secondary">Search Candidates</a>
+                        <a href="{% url 'profiles:saved_searches_list' %}" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i>Saved Searches
+                        </a>
+                        <a href="{% url 'jobs:job_list' %}" class="btn btn-outline-secondary">BROWSE ALL JOBS</a>
                     </div>
                 </div>
             {% else %}

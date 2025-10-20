@@ -298,3 +298,37 @@ def my_applications(request):
     }
     
     return render(request, 'jobs/my_applications.html', context)
+
+
+@login_required
+def application_pipeline(request, job_id):
+    """Kanban board view for managing job applications (recruiters only)"""
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.user_type != 'recruiter':
+            messages.error(request, "Only recruiters can access the application pipeline.")
+            return redirect('jobs:job_list')
+        
+        recruiter_profile = RecruiterProfile.objects.get(user_profile=user_profile)
+    except (UserProfile.DoesNotExist, RecruiterProfile.DoesNotExist):
+        messages.error(request, "Recruiter profile not found.")
+        return redirect('jobs:job_list')
+    
+    job = get_object_or_404(Job, id=job_id, recruiter=recruiter_profile)
+    
+    # Get applications grouped by status
+    applications_by_status = {
+        'applied': job.applications.filter(status='applied').order_by('-applied_at'),
+        'review': job.applications.filter(status='review').order_by('-status_updated_at'),
+        'interview': job.applications.filter(status='interview').order_by('-status_updated_at'),
+        'offer': job.applications.filter(status='offer').order_by('-status_updated_at'),
+        'closed': job.applications.filter(status='closed').order_by('-status_updated_at'),
+    }
+    
+    context = {
+        'job': job,
+        'applications_by_status': applications_by_status,
+        'status_choices': JobApplication.STATUS_CHOICES,
+    }
+    
+    return render(request, 'jobs/application_pipeline.html', context)

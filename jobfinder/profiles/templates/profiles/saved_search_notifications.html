@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Notifications - Job Finder{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-bell me-2"></i>Saved Search Notifications
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h5>Active Searches with Notifications</h5>
+                            {% if saved_searches %}
+                                <div class="list-group">
+                                    {% for search in saved_searches %}
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-1">{{ search.name }}</h6>
+                                                    <small class="text-muted">
+                                                        Last notified: 
+                                                        {% if search.last_notified %}
+                                                            {{ search.last_notified|date:"M d, Y g:i A" }}
+                                                        {% else %}
+                                                            Never
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                                <a href="{% url 'profiles:execute_saved_search' search.id %}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    Run Search
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    You don't have any saved searches with notifications enabled. 
+                                    <a href="{% url 'profiles:saved_searches_list' %}" class="alert-link">Create a saved search</a> 
+                                    and enable notifications to get notified about new candidates.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h5>Recent Notifications</h5>
+                            {% if recent_notifications %}
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Search</th>
+                                                <th>Candidate</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for notification in recent_notifications %}
+                                                <tr>
+                                                    <td>{{ notification.notified_at|date:"M d, Y g:i A" }}</td>
+                                                    <td>{{ notification.saved_search.name }}</td>
+                                                    <td>
+                                                        {{ notification.candidate.get_full_name|default:notification.candidate.username }}
+                                                    </td>
+                                                    <td>
+                                                        <a href="{% url 'profiles:view_profile_public' notification.candidate.id %}" 
+                                                           class="btn btn-sm btn-outline-primary">
+                                                            View Profile
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    No notifications yet. When new candidates match your saved searches, 
+                                    they will appear here.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{% url 'profiles:saved_searches_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Saved Searches
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="fas fa-question-circle me-2"></i>How Notifications Work
+            </h5>
+            <ul>
+                <li><strong>Automatic & Real-time:</strong> Notifications are created instantly when a candidate profile is created or updated</li>
+                <li>When a job seeker creates or updates their profile, the system automatically checks all active saved searches</li>
+                <li>If the profile matches your search criteria, a notification is created immediately</li>
+                <li>You'll only be notified once per candidate per search</li>
+                <li>Enable/disable notifications for each saved search in your 
+                    <a href="{% url 'profiles:saved_searches_list' %}">saved searches list</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

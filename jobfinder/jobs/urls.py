@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, ajax_views
 
 app_name = 'jobs'
 
@@ -12,4 +12,16 @@ urlpatterns = [
     path('<int:job_id>/apply/', views.apply_to_job, name='apply_to_job'),
     path('my-jobs/', views.my_jobs, name='my_jobs'),
     path('my-applications/', views.my_applications, name='my_applications'),
+    
+    # Application pipeline
+    path('<int:job_id>/pipeline/', views.application_pipeline, name='application_pipeline'),
+    
+    # AJAX endpoints
+    path('ajax/update-status/', ajax_views.update_application_status, name='ajax_update_status'),
+    path('ajax/batch-update/', ajax_views.batch_update_status, name='ajax_batch_update'),
+    path('ajax/delete-application/', ajax_views.delete_application, name='ajax_delete_application'),
+    path('ajax/messages/<int:application_id>/', ajax_views.application_messages, name='ajax_messages'),
+    path('ajax/send-message/', ajax_views.send_message, name='ajax_send_message'),
+    path('ajax/unread-count/', ajax_views.get_unread_message_count, name='ajax_unread_count'),
+    path('ajax/conversations/', ajax_views.get_conversations, name='ajax_conversations'),
 ]
