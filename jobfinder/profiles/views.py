@@ -87,7 +87,7 @@ def view_profile_public(request, user_id):
     try:
         from django.contrib.auth.models import User
         user = User.objects.get(id=user_id)
-        profile = user2.profile
+        profile = user.profile
     except (User.DoesNotExist, Profile.DoesNotExist):
         messages.error(request, 'Profile not found.')
         return redirect('home')  # You'll need to create a home view
