@@ -2,6 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from .forms import ProfileForm, PrivacySettingsForm
+from .models import Profile
+import re
 from django.db.models import Q
 from django.utils import timezone
 from .forms import ProfileForm, PrivacySettingsForm, SavedSearchForm, CandidateSearchForm
@@ -91,10 +94,20 @@ def view_profile_public(request, user_id):
     
     # Only show fields that are marked as visible to recruiters
     visible_fields = profile.get_visible_fields()
-    
+
+    # Preprocess certain fields for template convenience (e.g., split links into a list)
+    processed = {}
+    for fname, fval in visible_fields.items():
+        if fname == 'links' and fval:
+            # split on newlines, commas, or semicolons
+            links = [l.strip() for l in re.split(r"[\n\r,;]+", fval) if l.strip()]
+            processed[fname] = links
+        else:
+            processed[fname] = fval
+
     return render(request, 'profiles/view_profile_public.html', {
         'profile': profile,
-        'visible_fields': visible_fields,
+        'visible_fields': processed,
         'is_public_view': True
     })
 

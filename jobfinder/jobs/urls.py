@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:job_id>/delete/', views.delete_job, name='delete_job'),
     path('<int:job_id>/apply/', views.apply_to_job, name='apply_to_job'),
     path('my-jobs/', views.my_jobs, name='my_jobs'),
+    path('<int:job_id>/recommended-candidates/', views.recommended_candidates, name='recommended_candidates'),
     path('my-applications/', views.my_applications, name='my_applications'),
     
     # Application pipeline

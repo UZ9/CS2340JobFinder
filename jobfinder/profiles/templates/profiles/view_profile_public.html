@@ -36,8 +36,8 @@
                                         {% for link in field_value.splitlines %}
                                             {% if link.strip %}
                                                 <p class="mb-2">
-                                                    <a href="{{ link.strip }}" target="_blank" class="btn btn-outline-primary btn-sm">
-                                                        <i class="fas fa-external-link-alt me-1"></i>{{ link.strip }}
+                                                    <a href="{{ link }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                        <i class="fas fa-external-link-alt me-1"></i>{{ link }}
                                                     </a>
                                                 </p>
                                             {% endif %}
