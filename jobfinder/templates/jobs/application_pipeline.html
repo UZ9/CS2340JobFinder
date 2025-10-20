@@ -314,6 +314,21 @@ function handleDragLeave(e) {
     }
 }
 
+function refreshMessages(applicationId) {
+    fetch(`{% url 'jobs:ajax_messages' 0 %}`.replace('0', applicationId))
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayMessages(data.messages); 
+        } else {
+            console.error('Failed to refresh messages:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching messages for refresh:', error);
+    });
+}
+
 function handleDrop(e) {
     if (e.stopPropagation) {
         e.stopPropagation(); // Stops some browsers from redirecting
@@ -630,7 +645,7 @@ function sendMessage() {
         console.log('Send message data:', data);
         if (data.success) {
             input.value = '';
-            openMessages(currentApplicationId); // Refresh messages
+            refreshMessages(currentApplicationId); // Refresh messages
         } else {
             console.error('Failed to send message:', data.error);
             alert('Error: ' + (data.error || 'Failed to send message'));

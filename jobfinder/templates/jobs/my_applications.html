@@ -222,6 +222,21 @@ function openJobSeekerMessages(applicationId) {
     });
 }
 
+function refreshMessages(applicationId) {
+    fetch(`{% url 'jobs:ajax_messages' 0 %}`.replace('0', applicationId))
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayMessages(data.messages);
+        } else {
+            console.error('Failed:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
 function displayMessages(messages) {
     const container = document.getElementById('messageContainer');
     container.innerHTML = '';
@@ -237,7 +252,7 @@ function displayMessages(messages) {
         msgDiv.innerHTML = `
             <div class="message-header">
                 <strong>${msg.sender}</strong>
-                <small class="text-muted">${msg.created_at}</small>
+                <small class="">${msg.created_at}</small>
             </div>
             <div class="message-content">${msg.content}</div>
         `;
@@ -271,7 +286,7 @@ function sendJobSeekerMessage() {
     .then(data => {
         if (data.success) {
             input.value = '';
-            openJobSeekerMessages(currentApplicationId); // Refresh messages
+            refreshMessages(currentApplicationId); // Refresh messages
         } else {
             alert('Error: ' + data.error);
         }

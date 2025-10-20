@@ -47,7 +47,7 @@
                 {% endif %}
             {% endwith %}
         </button>
-        <button type="button" class="btn btn-outline-success notify-btn" onclick="notifyApplicant(this)" title="Notify Applicant">
+        <button type="button" class="btn btn-outline-success notify-btn" onclick="notifyApplicant(this)" title="Notify Applicant of Status Update">
             <i class="fas fa-bell"></i>
         </button>
         <button type="button" class="btn btn-outline-danger" onclick="openRejectModal({{ application.id }}, this.closest('.application-card'))" title="Reject Application">
