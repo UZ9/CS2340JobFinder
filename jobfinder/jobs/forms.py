@@ -8,7 +8,7 @@ class JobForm(forms.ModelForm):
         fields = [
             'title', 'description', 'company', 'location', 'skills_required',
             'salary_min', 'salary_max', 'work_type', 'visa_sponsorship',
-            'experience_level'
+            'experience_level', 'latitude', 'longitude'
         ]
         widgets = {
             'title': forms.TextInput(attrs={
@@ -50,6 +50,8 @@ class JobForm(forms.ModelForm):
             'experience_level': forms.Select(attrs={
                 'class': 'form-control'
             }),
+            'latitude': forms.HiddenInput(),
+            'longitude': forms.HiddenInput(),
         }
 
     def clean(self):

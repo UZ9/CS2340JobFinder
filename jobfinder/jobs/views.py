@@ -172,6 +172,7 @@ def job_detail(request, job_id):
         'job': job,
         'has_applied': has_applied,
         'user_type': user_type,
+        'has_coordinates': job.latitude is not None and job.longitude is not None,
     }
     
     return render(request, 'jobs/job_detail.html', context)

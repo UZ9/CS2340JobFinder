@@ -31,12 +31,18 @@ class Job(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
         return f"{self.title} at {self.company}"
+
+    def has_coordinates(self):
+        """Return True if both latitude and longitude are present."""
+        return self.latitude is not None and self.longitude is not None
 
     def get_skills_list(self):
         """Return skills as a list"""
