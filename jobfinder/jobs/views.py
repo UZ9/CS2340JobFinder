@@ -28,6 +28,27 @@ def job_list(request):
     location = request.GET.get('location', '')
     if location:
         jobs = jobs.filter(location__icontains=location)
+
+    # Optional lat/lng/radius filters (used by map UI). If not provided in GET,
+    # try to use the authenticated user's profile coordinates (if available).
+    lat = request.GET.get('lat', '')
+    lng = request.GET.get('lng', '')
+    radius_km = request.GET.get('radius_km', '')
+
+    if not lat or not lng:
+        # try to read from user's profile
+        if request.user.is_authenticated:
+            try:
+                up = UserProfileVisible.objects.filter(user=request.user).first()
+                if up and up.latitude is not None and up.longitude is not None:
+                    lat = lat or str(up.latitude)
+                    lng = lng or str(up.longitude)
+            except Exception:
+                pass
+
+    # If radius not provided, default to 25 km
+    if not radius_km:
+        radius_km = '25'
     
     # Filter by work type
     work_type = request.GET.get('work_type', '')
@@ -136,6 +157,9 @@ def job_list(request):
         'jobs': jobs_page,
         'search_query': search_query,
         'location': location,
+        'lat': lat,
+        'lng': lng,
+        'radius_km': radius_km,
         'work_type': work_type,
         'visa_sponsorship': visa_sponsorship,
         'salary_min': salary_min,

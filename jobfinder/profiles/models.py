@@ -14,6 +14,10 @@ class Profile(models.Model):
     location = models.CharField(max_length=200, blank=True, help_text="Your current location (e.g., 'New York, NY' or 'San Francisco, CA')")
     projects = models.TextField(blank=True, help_text="Your projects with descriptions, technologies used, etc.")
 
+    # Optional precise coordinates for location-based features (e.g., map searches)
+    latitude = models.FloatField(blank=True, null=True, help_text="Optional: precise latitude for your location")
+    longitude = models.FloatField(blank=True, null=True, help_text="Optional: precise longitude for your location")
+
     # Privacy settings - what recruiters can see
     show_headline = models.BooleanField(default=True, help_text="Show headline to recruiters")
     show_skills = models.BooleanField(default=True, help_text="Show skills to recruiters")

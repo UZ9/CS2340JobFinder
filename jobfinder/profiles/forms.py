@@ -4,7 +4,7 @@ from .models import Profile, SavedSearch
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['headline', 'skills', 'education', 'work_experience', 'links', 'location', 'projects']
+        fields = ['headline', 'skills', 'education', 'work_experience', 'links', 'location', 'latitude', 'longitude', 'projects']
         widgets = {
             'headline': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -36,6 +36,16 @@ class ProfileForm(forms.ModelForm):
                 'placeholder': 'e.g., "New York, NY" or "San Francisco, CA"',
                 'maxlength': '200'
             }),
+            'latitude': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': 'any',
+                'placeholder': 'Optional latitude e.g. 37.7749'
+            }),
+            'longitude': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': 'any',
+                'placeholder': 'Optional longitude e.g. -122.4194'
+            }),
             'projects': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 5,
@@ -49,6 +59,8 @@ class ProfileForm(forms.ModelForm):
             'work_experience': 'Work Experience *',
             'links': 'Professional Links',
             'location': 'Location',
+            'latitude': 'Latitude (optional)',
+            'longitude': 'Longitude (optional)',
             'projects': 'Projects'
         }
         help_texts = {
@@ -58,6 +70,8 @@ class ProfileForm(forms.ModelForm):
             'work_experience': 'Your professional work history with key achievements and responsibilities',
             'links': 'Links to your professional profiles, portfolios, or projects (optional)',
             'location': 'Your current location to help recruiters find local talent (optional)',
+            'latitude': 'Optional: enter latitude for precise positioning (used by map/radius filters)',
+            'longitude': 'Optional: enter longitude for precise positioning (used by map/radius filters)',
             'projects': 'Showcase your personal or professional projects with descriptions and technologies (optional)'
         }
 

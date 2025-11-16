@@ -29,6 +29,7 @@
                         <label class="form-label">Location</label>
                         <input type="text" class="form-control" name="location" placeholder="City, State" value="{{ location }}">
                     </div>
+                    
                     <div class="col-md-2">
                         <label class="form-label">Work Type</label>
                         <select class="form-select" name="work_type">
@@ -64,6 +65,7 @@
                         <label class="form-label">Salary Max</label>
                         <input type="number" class="form-control" name="salary_max" placeholder="150000" value="{{ salary_max }}">
                     </div>
+                    
                     <div class="col-md-3">
                         <div class="form-check mt-3">
                             <input class="form-check-input" type="checkbox" name="visa_sponsorship" value="true" {% if visa_sponsorship == 'true' %}checked{% endif %}>
@@ -163,6 +165,21 @@
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3>Available Jobs ({{ jobs.paginator.count }} found)</h3>
+                </div>
+
+                <!-- Map and distance filter -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">Jobs Map</h5>
+                            <div class="d-flex align-items-center gap-2">
+                                <button id="locateBtn" class="btn btn-outline-primary btn-sm">Find My Location</button>
+                                <label class="mb-0">Radius (km): <span id="radiusLabel">25</span></label>
+                                <input id="radiusRange" type="range" min="1" max="200" value="25" style="width:200px">
+                            </div>
+                        </div>
+                        <div id="jobs-map" style="height: 420px; border:1px solid #e6e6e6; border-radius:6px"></div>
+                    </div>
                 </div>
 
                 {% if jobs %}
@@ -285,5 +302,166 @@ function clearFilters() {
     // Submit the form to reload with no filters
     document.querySelector('form').submit();
 }
+</script>
+<!-- Leaflet assets and map script -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+    const mapEl = document.getElementById('jobs-map');
+    if (!mapEl) return; // nothing to do
+
+    const map = L.map('jobs-map', { scrollWheelZoom: false }).setView([37.7749, -122.4194], 5);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let userMarker = null;
+    let radiusCircle = null;
+    let markersLayer = L.layerGroup().addTo(map);
+
+    const radiusRange = document.getElementById('radiusRange');
+    const radiusLabel = document.getElementById('radiusLabel');
+    const locateBtn = document.getElementById('locateBtn');
+
+    radiusRange.addEventListener('input', () => {
+        radiusLabel.textContent = radiusRange.value;
+        // refetch if we have a user location
+        if (userMarker) {
+            fetchAndRenderJobs(userMarker.getLatLng(), parseFloat(radiusRange.value));
+        }
+    });
+
+    locateBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            alert('Geolocation not supported by your browser');
+            return;
+        }
+        locateBtn.disabled = true;
+        locateBtn.textContent = 'Locating...';
+        navigator.geolocation.getCurrentPosition((pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const latlng = L.latLng(lat, lng);
+            if (userMarker) userMarker.setLatLng(latlng);
+            else userMarker = L.marker(latlng, {title: 'Your location'}).addTo(map);
+
+            if (radiusCircle) radiusCircle.setLatLng(latlng).setRadius(parseFloat(radiusRange.value) * 1000);
+            else radiusCircle = L.circle(latlng, {radius: parseFloat(radiusRange.value) * 1000, color: '#007bff', fillOpacity: 0.05}).addTo(map);
+
+            map.setView(latlng, 12);
+            fetchAndRenderJobs(latlng, parseFloat(radiusRange.value));
+            locateBtn.disabled = false;
+            locateBtn.textContent = 'Find My Location';
+        }, (err) => {
+            console.warn('Geolocation error:', err);
+            // Try to fall back to server-provided profile coordinates (if available)
+            const profileLat = {% if lat %}{{ lat }}{% else %}null{% endif %};
+            const profileLng = {% if lng %}{{ lng }}{% else %}null{% endif %};
+            const profileRadius = {% if radius_km %}{{ radius_km }}{% else %}null{% endif %};
+
+            if (profileLat !== null && profileLng !== null) {
+                const latlng = L.latLng(profileLat, profileLng);
+                if (userMarker) userMarker.setLatLng(latlng);
+                else userMarker = L.marker(latlng, {title: 'Profile location'}).addTo(map);
+
+                if (radiusCircle) radiusCircle.setLatLng(latlng).setRadius(parseFloat(radiusRange.value) * 1000);
+                else radiusCircle = L.circle(latlng, {radius: parseFloat(radiusRange.value) * 1000, color: '#007bff', fillOpacity: 0.05}).addTo(map);
+
+                map.setView(latlng, 12);
+                // Use profile radius if available
+                const useRadius = (profileRadius !== null) ? parseFloat(profileRadius) : parseFloat(radiusRange.value);
+                fetchAndRenderJobs(latlng, useRadius);
+                locateBtn.disabled = false;
+                locateBtn.textContent = 'Find My Location';
+                return;
+            }
+
+            // No profile fallback available — show friendly guidance
+            let msg = 'Unable to retrieve your location: ' + (err && err.message ? err.message : 'unknown error') + "\n\n";
+            msg += 'Possible fixes:\n - Allow location access in your browser settings\n - Try a different browser or enable location services\n - Click on the map to choose a location manually';
+            alert(msg);
+            locateBtn.disabled = false;
+            locateBtn.textContent = 'Find My Location';
+        }, {enableHighAccuracy: true, timeout: 10000});
+    });
+
+    // Clicking on map sets center to clicked point
+    map.on('click', function(e){
+        const latlng = e.latlng;
+        if (userMarker) userMarker.setLatLng(latlng);
+        else userMarker = L.marker(latlng, {title: 'Search center'}).addTo(map);
+
+        if (radiusCircle) radiusCircle.setLatLng(latlng).setRadius(parseFloat(radiusRange.value) * 1000);
+        else radiusCircle = L.circle(latlng, {radius: parseFloat(radiusRange.value) * 1000, color: '#007bff', fillOpacity: 0.05}).addTo(map);
+
+        fetchAndRenderJobs(latlng, parseFloat(radiusRange.value));
+    });
+
+    async function fetchAndRenderJobs(latlng, maxDistanceKm) {
+        markersLayer.clearLayers();
+        const url = new URL('{% url "jobs:ajax_map_data" %}', window.location.origin);
+        if (latlng) {
+            url.searchParams.set('lat', latlng.lat);
+            url.searchParams.set('lng', latlng.lng);
+        }
+        if (maxDistanceKm) url.searchParams.set('max_distance_km', maxDistanceKm);
+
+        try {
+            const res = await fetch(url.toString(), {credentials: 'same-origin'});
+            const data = await res.json();
+            if (!data.success) {
+                console.error('Map data error', data.error);
+                return;
+            }
+
+            data.jobs.forEach(job => {
+                try {
+                    const marker = L.marker([job.latitude, job.longitude]);
+                    let popupHtml = `<strong>${escapeHtml(job.title)}</strong><br><small class='text-muted'>${escapeHtml(job.company)}</small>`;
+                    if (job.distance_km !== null) popupHtml += `<br><small>Distance: ${job.distance_km} km</small>`;
+                    popupHtml += `<br><a href="/jobs/${job.id}/">View job</a>`;
+                    marker.bindPopup(popupHtml);
+                    markersLayer.addLayer(marker);
+                } catch (e) {
+                    console.error('Error adding marker', e);
+                }
+            });
+        } catch (e) {
+            console.error('Failed to fetch jobs for map', e);
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // initial fetch: try to initialize using server-side profile coordinates if present,
+    // otherwise show all jobs
+    const profileLatInit = {% if lat %}{{ lat }}{% else %}null{% endif %};
+    const profileLngInit = {% if lng %}{{ lng }}{% else %}null{% endif %};
+    const profileRadiusInit = {% if radius_km %}{{ radius_km }}{% else %}null{% endif %};
+
+    if (profileLatInit !== null && profileLngInit !== null) {
+        const initLatLng = L.latLng(profileLatInit, profileLngInit);
+        userMarker = L.marker(initLatLng, {title: 'Profile location'}).addTo(map);
+        const r = (profileRadiusInit !== null) ? parseFloat(profileRadiusInit) : parseFloat(radiusRange.value);
+        radiusCircle = L.circle(initLatLng, {radius: r * 1000, color: '#007bff', fillOpacity: 0.05}).addTo(map);
+        radiusRange.value = r;
+        radiusLabel.textContent = r;
+        map.setView(initLatLng, 12);
+        fetchAndRenderJobs(initLatLng, r);
+    } else {
+        fetchAndRenderJobs(null, null);
+    }
+})();
 </script>
 {% endblock %}

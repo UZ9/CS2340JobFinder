@@ -25,4 +25,5 @@ urlpatterns = [
     path('ajax/send-message/', ajax_views.send_message, name='ajax_send_message'),
     path('ajax/unread-count/', ajax_views.get_unread_message_count, name='ajax_unread_count'),
     path('ajax/conversations/', ajax_views.get_conversations, name='ajax_conversations'),
+    path('ajax/map-data/', ajax_views.get_jobs_geo, name='ajax_map_data'),
 ]

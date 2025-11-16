@@ -9,6 +9,7 @@ from django.utils import timezone
 from authentication.models import UserProfile, RecruiterProfile
 from .models import Job, JobApplication, Message
 import json
+import math
 
 
 @login_required
@@ -254,6 +255,67 @@ def get_unread_message_count(request):
             'unread_count': unread_count
         })
     
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+def _haversine_distance_km(lat1, lon1, lat2, lon2):
+    """Return distance between two lat/lon points in kilometers."""
+    # convert decimal degrees to radians
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    km = 6371.0088 * c
+    return km
+
+
+def get_jobs_geo(request):
+    """Return jobs with coordinates as JSON. Optional GET params: lat, lng, max_distance_km."""
+    try:
+        jobs_qs = Job.objects.filter(is_active=True)
+
+        # Parse optional filters
+        lat = request.GET.get('lat')
+        lng = request.GET.get('lng')
+        max_distance = request.GET.get('max_distance_km')
+
+        jobs_list = []
+
+        # Convert to floats when provided
+        try:
+            lat = float(lat) if lat is not None else None
+            lng = float(lng) if lng is not None else None
+            max_distance = float(max_distance) if max_distance is not None else None
+        except (TypeError, ValueError):
+            lat = lng = max_distance = None
+
+        for job in jobs_qs:
+            if job.latitude is None or job.longitude is None:
+                continue
+
+            distance_km = None
+            if lat is not None and lng is not None:
+                distance_km = _haversine_distance_km(lat, lng, job.latitude, job.longitude)
+
+                if max_distance is not None and distance_km > max_distance:
+                    # skip jobs outside radius
+                    continue
+
+            jobs_list.append({
+                'id': job.id,
+                'title': job.title,
+                'company': job.company,
+                'location': job.location,
+                'latitude': job.latitude,
+                'longitude': job.longitude,
+                'distance_km': round(distance_km, 2) if distance_km is not None else None,
+                'detail_url': f"{request.scheme}://{request.get_host()}{request.build_absolute_uri('/').rstrip('/')}/jobs/{job.id}/",
+            })
+
+        return JsonResponse({'success': True, 'jobs': jobs_list})
+
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
