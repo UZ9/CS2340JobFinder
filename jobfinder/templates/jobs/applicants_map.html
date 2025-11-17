@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Applicant Locations - {{ job.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'jobs:my_jobs' %}">My Jobs</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'jobs:job_detail' job.id %}">{{ job.title }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Applicant Map</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>Applicant Locations: {{ job.title }}</h2>
+                    <p class="text-muted">{{ job.company }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'jobs:application_pipeline' job.id %}" class="btn btn-secondary">
+                        <i class="bi bi-kanban"></i> View Pipeline
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Where Applicants Are Located</h5>
+                        <div>
+                            <span class="badge bg-primary" id="applicant-count">Loading...</span>
+                        </div>
+                    </div>
+                    <div id="applicants-map" style="height: 600px; width: 100%;"></div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> Only showing applicants who have enabled location sharing in their profile settings.
+                            Click on clusters to zoom in and see individual applicants.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Legend</h5>
+                    <div class="d-flex flex-wrap gap-3">
+                        <div><span class="badge bg-info">Applied</span> - Recently Applied</div>
+                        <div><span class="badge bg-primary">In Review</span> - Under Review</div>
+                        <div><span class="badge bg-warning">Interview</span> - Interview Stage</div>
+                        <div><span class="badge bg-success">Offer</span> - Offer Extended</div>
+                        <div><span class="badge bg-secondary">Closed</span> - Application Closed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet CSS and JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Leaflet.markercluster CSS and JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<style>
+    /* Custom cluster icon colors */
+    .marker-cluster-small {
+        background-color: rgba(110, 204, 57, 0.6);
+    }
+    .marker-cluster-small div {
+        background-color: rgba(110, 204, 57, 0.8);
+    }
+    .marker-cluster-medium {
+        background-color: rgba(240, 194, 12, 0.6);
+    }
+    .marker-cluster-medium div {
+        background-color: rgba(240, 194, 12, 0.8);
+    }
+    .marker-cluster-large {
+        background-color: rgba(253, 156, 115, 0.6);
+    }
+    .marker-cluster-large div {
+        background-color: rgba(253, 156, 115, 0.8);
+    }
+
+    /* Custom marker styling */
+    .custom-marker {
+        border-radius: 50%;
+        text-align: center;
+        font-weight: bold;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the map
+        const map = L.map('applicants-map').setView([39.8283, -98.5795], 4); // Center of US
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Create marker cluster group
+        const markers = L.markerClusterGroup({
+            maxClusterRadius: 50,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: true,
+            zoomToBoundsOnClick: true
+        });
+
+        // Function to get marker color based on status
+        function getStatusColor(status) {
+            const statusColors = {
+                'applied': '#0dcaf0',      // info/cyan
+                'review': '#0d6efd',       // primary/blue
+                'interview': '#ffc107',    // warning/yellow
+                'offer': '#198754',        // success/green
+                'closed': '#6c757d',       // secondary/gray
+                'rejected': '#dc3545'      // danger/red
+            };
+            return statusColors[status] || '#6c757d';
+        }
+
+        // Function to get status badge class
+        function getStatusBadgeClass(status) {
+            const badgeClasses = {
+                'applied': 'bg-info',
+                'review': 'bg-primary',
+                'interview': 'bg-warning',
+                'offer': 'bg-success',
+                'closed': 'bg-secondary',
+                'rejected': 'bg-danger'
+            };
+            return badgeClasses[status] || 'bg-secondary';
+        }
+
+        // Fetch applicant locations
+        fetch("{% url 'jobs:ajax_applicant_locations' job.id %}")
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const locations = data.locations;
+                    
+                    // Update count badge
+                    document.getElementById('applicant-count').textContent = 
+                        `${data.count} applicant${data.count !== 1 ? 's' : ''} with location sharing enabled`;
+
+                    if (locations.length === 0) {
+                        document.getElementById('applicants-map').innerHTML = 
+                            '<div class="alert alert-info">No applicants have enabled location sharing yet.</div>';
+                        return;
+                    }
+
+                    // Add markers for each applicant
+                    locations.forEach(location => {
+                        const color = getStatusColor(location.status_code);
+                        const badgeClass = getStatusBadgeClass(location.status_code);
+                        
+                        // Create custom marker icon
+                        const customIcon = L.divIcon({
+                            className: 'custom-div-icon',
+                            html: `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15]
+                        });
+
+                        const marker = L.marker([location.lat, location.lng], { icon: customIcon });
+                        
+                        // Create popup content
+                        const popupContent = `
+                            <div style="min-width: 200px;">
+                                <h6><strong>${location.name}</strong></h6>
+                                <p class="mb-1"><i class="bi bi-geo-alt"></i> ${location.location}</p>
+                                <p class="mb-1">
+                                    <span class="badge ${badgeClass}">${location.status}</span>
+                                </p>
+                                <p class="mb-1 text-muted" style="font-size: 0.85em;">
+                                    <i class="bi bi-calendar"></i> Applied: ${location.applied_at}
+                                </p>
+                                <a href="{% url 'jobs:application_pipeline' job.id %}" class="btn btn-sm btn-primary mt-2">
+                                    View in Pipeline
+                                </a>
+                            </div>
+                        `;
+                        
+                        marker.bindPopup(popupContent);
+                        markers.addLayer(marker);
+                    });
+
+                    // Add marker cluster group to map
+                    map.addLayer(markers);
+
+                    // Fit map to show all markers
+                    if (locations.length > 0) {
+                        map.fitBounds(markers.getBounds(), { padding: [50, 50] });
+                    }
+                } else {
+                    console.error('Error fetching applicant locations:', data.error);
+                    document.getElementById('applicants-map').innerHTML = 
+                        '<div class="alert alert-danger">Error loading applicant locations.</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('applicants-map').innerHTML = 
+                    '<div class="alert alert-danger">Error loading applicant locations.</div>';
+            });
+    });
+</script>
+{% endblock %}

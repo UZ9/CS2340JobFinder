@@ -7,9 +7,9 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from authentication.models import UserProfile, RecruiterProfile
+from profiles.models import Profile
 from .models import Job, JobApplication, Message
 import json
-import math
 
 
 @login_required
@@ -259,67 +259,6 @@ def get_unread_message_count(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
-def _haversine_distance_km(lat1, lon1, lat2, lon2):
-    """Return distance between two lat/lon points in kilometers."""
-    # convert decimal degrees to radians
-    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-    c = 2 * math.asin(math.sqrt(a))
-    km = 6371.0088 * c
-    return km
-
-
-def get_jobs_geo(request):
-    """Return jobs with coordinates as JSON. Optional GET params: lat, lng, max_distance_km."""
-    try:
-        jobs_qs = Job.objects.filter(is_active=True)
-
-        # Parse optional filters
-        lat = request.GET.get('lat')
-        lng = request.GET.get('lng')
-        max_distance = request.GET.get('max_distance_km')
-
-        jobs_list = []
-
-        # Convert to floats when provided
-        try:
-            lat = float(lat) if lat is not None else None
-            lng = float(lng) if lng is not None else None
-            max_distance = float(max_distance) if max_distance is not None else None
-        except (TypeError, ValueError):
-            lat = lng = max_distance = None
-
-        for job in jobs_qs:
-            if job.latitude is None or job.longitude is None:
-                continue
-
-            distance_km = None
-            if lat is not None and lng is not None:
-                distance_km = _haversine_distance_km(lat, lng, job.latitude, job.longitude)
-
-                if max_distance is not None and distance_km > max_distance:
-                    # skip jobs outside radius
-                    continue
-
-            jobs_list.append({
-                'id': job.id,
-                'title': job.title,
-                'company': job.company,
-                'location': job.location,
-                'latitude': job.latitude,
-                'longitude': job.longitude,
-                'distance_km': round(distance_km, 2) if distance_km is not None else None,
-                'detail_url': f"{request.scheme}://{request.get_host()}{request.build_absolute_uri('/').rstrip('/')}/jobs/{job.id}/",
-            })
-
-        return JsonResponse({'success': True, 'jobs': jobs_list})
-
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-
 @login_required
 def get_conversations(request):
     """Get all conversations for current user"""
@@ -375,6 +314,53 @@ def get_conversations(request):
             'success': True,
             'conversations': conversations,
             'unread_count': total_unread
+        })
+    
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+def get_applicant_locations(request, job_id):
+    """AJAX endpoint to get applicant locations for map clustering"""
+    try:
+        # Verify recruiter owns this job
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.user_type != 'recruiter':
+            return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
+        
+        recruiter_profile = RecruiterProfile.objects.get(user_profile=user_profile)
+        job = get_object_or_404(Job, id=job_id, recruiter=recruiter_profile)
+        
+        # Get all applicants for this job
+        applications = job.applications.all()
+        
+        locations = []
+        for application in applications:
+            try:
+                # Get the applicant's profile
+                profile = Profile.objects.get(user=application.applicant)
+                
+                # Only include if location sharing is enabled and coordinates exist
+                if profile.show_location and profile.latitude and profile.longitude:
+                    locations.append({
+                        'lat': float(profile.latitude),
+                        'lng': float(profile.longitude),
+                        'name': application.applicant.get_full_name() or application.applicant.username,
+                        'location': profile.location or 'Location not specified',
+                        'status': application.get_status_display(),
+                        'status_code': application.status,
+                        'applied_at': application.applied_at.strftime('%b %d, %Y'),
+                        'application_id': application.id
+                    })
+            except Profile.DoesNotExist:
+                # Skip if profile doesn't exist
+                continue
+        
+        return JsonResponse({
+            'success': True,
+            'locations': locations,
+            'count': len(locations)
         })
     
     except Exception as e:
