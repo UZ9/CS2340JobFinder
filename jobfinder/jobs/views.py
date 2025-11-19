@@ -138,6 +138,66 @@ def job_list(request):
             user_type = user_profile.user_type
         except UserProfile.DoesNotExist:
             pass
+
+    # Recommended jobs based on user's skills (for job seekers)
+    recommended_jobs = []
+    if request.user.is_authenticated and user_type == 'job_seeker':
+        try:
+            # Prefer the editable profile in `profiles.Profile` for user's skills
+            raw_skills = ''
+            user_skills_source = 'none'
+            try:
+                user_profile_visible = UserProfileVisible.objects.filter(user=request.user).first()
+                if user_profile_visible and user_profile_visible.skills:
+                    raw_skills = user_profile_visible.skills
+                    user_skills_source = 'profiles.Profile'
+            except Exception:
+                user_profile_visible = None
+
+            if not raw_skills:
+                js_profile = JobSeekerProfile.objects.filter(user_profile=user_profile).first()
+                if js_profile and js_profile.skills:
+                    raw_skills = js_profile.skills
+                    user_skills_source = 'JobSeekerProfile'
+
+            # Tokenize on common separators and whitespace, normalize to lowercase
+            def tokenize(s):
+                return {tok.strip().lower() for tok in re.split(r"[,;/\\s]+", s) if tok.strip()}
+
+            user_skills = tokenize(raw_skills)
+
+            if user_skills:
+                # Build a scored list of (overlap_count, created_at, job)
+                candidates = []
+                for j in Job.objects.filter(is_active=True):
+                    # Merge user-editable `profiles.Profile.skills` (poster) with admin `j.skills_required`
+                    poster_skills = ''
+                    try:
+                        recruiter_user = j.recruiter.user_profile.user
+                        poster = UserProfileVisible.objects.filter(user=recruiter_user).first()
+                        if poster and poster.skills:
+                            poster_skills = poster.skills
+                    except Exception:
+                        poster_skills = ''
+
+                    admin_skills = j.skills_required or ''
+
+                    # Combine both sources (union) so we don't miss any skill tokens
+                    combined_raw = ','.join([s for s in (poster_skills, admin_skills) if s])
+                    job_skills = tokenize(combined_raw)
+                    overlap = len(user_skills & job_skills)
+                    
+                    if overlap > 0:
+                        candidates.append((overlap, j.created_at, j))
+
+                # Sort by overlap desc, then newest first, limit to 8
+                candidates.sort(key=lambda t: (t[0], t[1]), reverse=True)
+                recommended_jobs = [t[2] for t in candidates[:8]]
+
+            
+
+        except JobSeekerProfile.DoesNotExist:
+            recommended_jobs = []
     
     context = {
         'jobs': jobs_page,
@@ -151,10 +211,10 @@ def job_list(request):
         'user_type': user_type,
         'work_type_choices': Job.WORK_TYPE_CHOICES,
         'experience_choices': Job.EXPERIENCE_CHOICES,
-    'recommended_jobs': recommended_jobs,
-    'start_city': start_city,
-    'commute_miles': commute_miles,
-    'city_choices': sorted([c.title() for c in CITY_COORDS.keys()]),
+        'recommended_jobs': recommended_jobs,
+        'start_city': start_city,
+        'commute_miles': commute_miles,
+        'city_choices': sorted([c.title() for c in CITY_COORDS.keys()]),
     }
     
     return render(request, 'jobs/job_list.html', context)
