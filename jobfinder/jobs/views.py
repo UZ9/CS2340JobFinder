@@ -4,10 +4,10 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from authentication.models import UserProfile, RecruiterProfile, JobSeekerProfile
-from profiles.models import Profile as UserProfileVisible
 from .models import Job, JobApplication
 from .forms import JobForm, JobApplicationForm
 import re
+import math
 
 
 def job_list(request):
@@ -58,7 +58,74 @@ def job_list(request):
     if experience_level:
         jobs = jobs.filter(experience_level=experience_level)
     
-    # Pagination
+    # --- Commute/distance filtering ---
+    # The UI will provide `start_city` (string) and `commute_miles` (int) via GET.
+    # We keep a small mapping of common city names -> (lat, lon). Jobs whose
+    # `location` text contains a known city name will be assigned that city's
+    # coordinates. If a commute filter is provided and a job's location doesn't
+    # map to a known city, the job will be excluded (we can't compute distance).
+    CITY_COORDS = {
+        'new york': (40.7128, -74.0060),
+        'san francisco': (37.7749, -122.4194),
+        'los angeles': (34.0522, -118.2437),
+        'chicago': (41.8781, -87.6298),
+        'boston': (42.3601, -71.0589),
+        'seattle': (47.6062, -122.3321),
+        'austin': (30.2672, -97.7431),
+        'denver': (39.7392, -104.9903),
+        'atlanta': (33.7490, -84.3880),
+        'portland': (45.5051, -122.6750),
+        'los angeles, ca': (34.0522, -118.2437),
+    }
+
+    def haversine_miles(lat1, lon1, lat2, lon2):
+        # Haversine formula to compute distance between two lat/lon in miles
+        R = 3958.8  # Earth radius in miles
+        phi1 = math.radians(lat1)
+        phi2 = math.radians(lat2)
+        dphi = math.radians(lat2 - lat1)
+        dlambda = math.radians(lon2 - lon1)
+        a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return R * c
+
+    def find_city_coords(text):
+        if not text:
+            return None
+        t = text.lower()
+        # try to match any city key that appears in the text
+        for city, coords in CITY_COORDS.items():
+            if city in t:
+                return coords
+        return None
+
+    start_city = request.GET.get('start_city', '')
+    commute_miles = request.GET.get('commute_miles', '')
+
+    try:
+        commute_val = float(commute_miles) if commute_miles else None
+    except ValueError:
+        commute_val = None
+
+    # If start_city provided, try to resolve to coordinates
+    start_coords = None
+    if start_city:
+        start_coords = CITY_COORDS.get(start_city.lower()) or None
+
+    # Apply distance filtering if both start_coords and commute_val are present
+    if start_coords and commute_val:
+        filtered = []
+        # evaluate current queryset into list
+        for j in jobs:
+            job_coords = find_city_coords(j.location or '')
+            if not job_coords:
+                # skip jobs with unknown/ambiguous locations when commute filter is active
+                continue
+            dist = haversine_miles(start_coords[0], start_coords[1], job_coords[0], job_coords[1])
+            if dist <= commute_val:
+                filtered.append(j)
+        jobs = filtered
+
     paginator = Paginator(jobs, 10)  # Show 10 jobs per page
     page_number = request.GET.get('page')
     jobs_page = paginator.get_page(page_number)
@@ -144,7 +211,10 @@ def job_list(request):
         'user_type': user_type,
         'work_type_choices': Job.WORK_TYPE_CHOICES,
         'experience_choices': Job.EXPERIENCE_CHOICES,
-    'recommended_jobs': recommended_jobs,
+        'recommended_jobs': recommended_jobs,
+        'start_city': start_city,
+        'commute_miles': commute_miles,
+        'city_choices': sorted([c.title() for c in CITY_COORDS.keys()]),
     }
     
     return render(request, 'jobs/job_list.html', context)
@@ -364,82 +434,6 @@ def my_applications(request):
 
 
 @login_required
-def recommended_candidates(request, job_id):
-    """Show a list of candidates whose skills match the job description (for the job's recruiter)"""
-    # Ensure the requester is the recruiter who owns this job
-    try:
-        user_profile = UserProfile.objects.get(user=request.user)
-        if user_profile.user_type != 'recruiter':
-            messages.error(request, "Only recruiters can view recommended candidates.")
-            return redirect('jobs:my_jobs')
-        recruiter_profile = RecruiterProfile.objects.get(user_profile=user_profile)
-    except (UserProfile.DoesNotExist, RecruiterProfile.DoesNotExist):
-        messages.error(request, "Recruiter profile not found.")
-        return redirect('jobs:my_jobs')
-
-    job = get_object_or_404(Job, id=job_id, recruiter=recruiter_profile)
-
-    # Build job skill set by combining admin field and recruiter's visible profile skills
-    def tokenize(s):
-        return {tok.strip().lower() for tok in re.split(r"[,;/\\s]+", s) if tok.strip()}
-
-    poster_skills = ''
-    try:
-        recruiter_user = job.recruiter.user_profile.user
-        poster = UserProfileVisible.objects.filter(user=recruiter_user).first()
-        if poster and poster.skills and poster.show_skills:
-            poster_skills = poster.skills
-    except Exception:
-        poster_skills = ''
-
-    admin_skills = job.skills_required or ''
-    combined_raw = ','.join([s for s in (poster_skills, admin_skills) if s])
-    job_skill_set = tokenize(combined_raw)
-
-    # Collect candidates: users who have profiles with visible skills that overlap
-    candidates = []
-    # iterate over visible profiles that have skills
-    for profile in UserProfileVisible.objects.filter(show_skills=True).exclude(skills__isnull=True).exclude(skills__exact=''):
-        candidate_skills = tokenize(profile.skills)
-        overlap = len(job_skill_set & candidate_skills)
-        if overlap > 0:
-            # profile.user is a Django User; try to pull JobSeekerProfile for extra metadata
-            try:
-                js_profile = JobSeekerProfile.objects.filter(user_profile__user=profile.user).first()
-            except Exception:
-                js_profile = None
-            candidates.append((overlap, profile.user, js_profile, profile))
-
-    # sort by overlap desc, then by profile updated_at (newest first)
-    from datetime import datetime
-
-    def profile_updated(p):
-        return getattr(p, 'updated_at', None) or datetime.min
-
-    candidates.sort(key=lambda t: (t[0], profile_updated(t[3])), reverse=True)
-
-    # Build a simple context list with user, overlap, profile, js_profile and computed skills_list
-    recommended = []
-    for overlap, user_obj, js_profile, profile in candidates:
-        skills_list = []
-        if profile and profile.skills:
-            skills_list = [s.strip() for s in re.split(r"[,;/\\n]+", profile.skills) if s.strip()][:6]
-        recommended.append({
-            'user': user_obj,
-            'jobseeker_profile': js_profile,
-            'profile': profile,
-            'overlap': overlap,
-            'skills_list': skills_list,
-        })
-
-    context = {
-        'job': job,
-        'recommended': recommended,
-    }
-
-    return render(request, 'jobs/recommended_candidates.html', context)
-
-@login_required
 def application_pipeline(request, job_id):
     """Kanban board view for managing job applications (recruiters only)"""
     try:
@@ -471,3 +465,26 @@ def application_pipeline(request, job_id):
     }
     
     return render(request, 'jobs/application_pipeline.html', context)
+
+
+@login_required
+def applicants_map(request, job_id):
+    """Map view showing clusters of applicants by location (recruiters only)"""
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.user_type != 'recruiter':
+            messages.error(request, "Only recruiters can access the applicants map.")
+            return redirect('jobs:job_list')
+        
+        recruiter_profile = RecruiterProfile.objects.get(user_profile=user_profile)
+    except (UserProfile.DoesNotExist, RecruiterProfile.DoesNotExist):
+        messages.error(request, "Recruiter profile not found.")
+        return redirect('jobs:job_list')
+    
+    job = get_object_or_404(Job, id=job_id, recruiter=recruiter_profile)
+    
+    context = {
+        'job': job,
+    }
+    
+    return render(request, 'jobs/applicants_map.html', context)

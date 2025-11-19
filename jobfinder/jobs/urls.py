@@ -11,11 +11,13 @@ urlpatterns = [
     path('<int:job_id>/delete/', views.delete_job, name='delete_job'),
     path('<int:job_id>/apply/', views.apply_to_job, name='apply_to_job'),
     path('my-jobs/', views.my_jobs, name='my_jobs'),
-    path('<int:job_id>/recommended-candidates/', views.recommended_candidates, name='recommended_candidates'),
     path('my-applications/', views.my_applications, name='my_applications'),
     
     # Application pipeline
     path('<int:job_id>/pipeline/', views.application_pipeline, name='application_pipeline'),
+    
+    # Applicants map
+    path('<int:job_id>/applicants-map/', views.applicants_map, name='applicants_map'),
     
     # AJAX endpoints
     path('ajax/update-status/', ajax_views.update_application_status, name='ajax_update_status'),
@@ -25,4 +27,5 @@ urlpatterns = [
     path('ajax/send-message/', ajax_views.send_message, name='ajax_send_message'),
     path('ajax/unread-count/', ajax_views.get_unread_message_count, name='ajax_unread_count'),
     path('ajax/conversations/', ajax_views.get_conversations, name='ajax_conversations'),
+    path('ajax/<int:job_id>/applicant-locations/', ajax_views.get_applicant_locations, name='ajax_applicant_locations'),
 ]

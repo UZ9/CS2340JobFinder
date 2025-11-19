@@ -21,6 +21,8 @@ class Job(models.Model):
     description = models.TextField()
     company = models.CharField(max_length=200)
     location = models.CharField(max_length=200, blank=True, null=True)  # Optional for remote jobs
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
     skills_required = models.TextField(help_text="Comma-separated skills")
     salary_min = models.PositiveIntegerField(blank=True, null=True)
     salary_max = models.PositiveIntegerField(blank=True, null=True)

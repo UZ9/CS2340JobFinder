@@ -62,6 +62,12 @@
                             {{ job.description|linebreaks }}
                         </div>
                     </div>
+                    {% if job.latitude and job.longitude %}
+                    <div class="mb-4">
+                        <h5>Office Location</h5>
+                        <div id="job-map" style="height: 300px; border: 1px solid #e6e6e6;"></div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -176,4 +182,38 @@ function copyJobUrl() {
     });
 }
 </script>
+<!-- Leaflet map for job location -->
+{% if job.latitude and job.longitude %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                if (typeof L === 'undefined') {
+                    console.error('Leaflet (L) is not defined. Check that the Leaflet JS loaded correctly.');
+                    return;
+                }
+                // Only initialize if there's a map container on the page
+                const mapEl = document.getElementById('job-map');
+                if (!mapEl) return;
+                const lat = parseFloat('{{ job.latitude|default:"" }}');
+                const lng = parseFloat('{{ job.longitude|default:"" }}');
+                const map = L.map('job-map').setView([lat || 37.7749, lng || -122.4194], lat && lng ? 13 : 10);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+
+                if (lat && lng) {
+                    const marker = L.marker([lat, lng]).addTo(map);
+                    marker.bindPopup('<strong>{{ job.company|escapejs }}</strong><br>{{ job.location|default:""|escapejs }}').openPopup();
+                }
+            } catch (err) {
+                console.error('Error initializing job location map:', err);
+            }
+        });
+    </script>
+{% endif %}
 {% endblock %}

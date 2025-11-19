@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Jobs - Job Finder{% endblock %}
 
@@ -29,6 +29,7 @@
                         <label class="form-label">Location</label>
                         <input type="text" class="form-control" name="location" placeholder="City, State" value="{{ location }}">
                     </div>
+                    
                     <div class="col-md-2">
                         <label class="form-label">Work Type</label>
                         <select class="form-select" name="work_type">
@@ -64,6 +65,7 @@
                         <label class="form-label">Salary Max</label>
                         <input type="number" class="form-control" name="salary_max" placeholder="150000" value="{{ salary_max }}">
                     </div>
+                    
                     <div class="col-md-3">
                         <div class="form-check mt-3">
                             <input class="form-check-input" type="checkbox" name="visa_sponsorship" value="true" {% if visa_sponsorship == 'true' %}checked{% endif %}>
@@ -76,6 +78,23 @@
                         <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
                             <i class="fas fa-times"></i> Clear
                         </button>
+                    </div>
+                </div>
+
+                <!-- Commute / starting city filters -->
+                <div class="row g-3 mt-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Starting City</label>
+                        <select class="form-select" name="start_city">
+                            <option value="">(Select city)</option>
+                            {% for city in city_choices %}
+                                <option value="{{ city }}" {% if start_city|lower == city|lower %}selected{% endif %}>{{ city }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Commute (miles)</label>
+                        <input type="number" min="0" step="1" class="form-control" name="commute_miles" placeholder="Miles" value="{{ commute_miles }}">
                     </div>
                 </div>
             </form>
@@ -154,7 +173,7 @@
                     {% endfor %}
                 {% else %}
                     <div class="d-flex align-items-center">
-                        <div class="text-muted">No recommendations yet — we'll show jobs here based on your skills.</div>
+                        <div class="text-muted">No recommendations yet, we'll show jobs here based on your skills.</div>
                     </div>
                 {% endif %}
             </div>
@@ -163,6 +182,21 @@
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3>Available Jobs ({{ jobs.paginator.count }} found)</h3>
+                </div>
+
+                <!-- Map and distance filter -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">Jobs Map</h5>
+                            <div class="d-flex align-items-center gap-2">
+                                <button id="locateBtn" class="btn btn-outline-primary btn-sm">Find My Location</button>
+                                <label class="mb-0">Radius (km): <span id="radiusLabel">25</span></label>
+                                <input id="radiusRange" type="range" min="1" max="200" value="25" style="width:200px">
+                            </div>
+                        </div>
+                        <div id="jobs-map" style="height: 420px; border:1px solid #e6e6e6; border-radius:6px"></div>
+                    </div>
                 </div>
 
                 {% if jobs %}
@@ -232,7 +266,7 @@
                             <ul class="pagination">
                                 {% if jobs.has_previous %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ jobs.previous_page_number }}&search={{ search_query }}&location={{ location }}&work_type={{ work_type }}&experience_level={{ experience_level }}&salary_min={{ salary_min }}&salary_max={{ salary_max }}&visa_sponsorship={{ visa_sponsorship }}">Previous</a>
+                                        <a class="page-link" href="?page={{ jobs.previous_page_number }}&search={{ search_query }}&location={{ location }}&work_type={{ work_type }}&experience_level={{ experience_level }}&salary_min={{ salary_min }}&salary_max={{ salary_max }}&visa_sponsorship={{ visa_sponsorship }}&start_city={{ start_city }}&commute_miles={{ commute_miles }}">Previous</a>
                                     </li>
                                 {% endif %}
 
@@ -243,14 +277,14 @@
                                         </li>
                                     {% elif num > jobs.number|add:'-3' and num < jobs.number|add:'3' %}
                                         <li class="page-item">
-                                            <a class="page-link" href="?page={{ num }}&search={{ search_query }}&location={{ location }}&work_type={{ work_type }}&experience_level={{ experience_level }}&salary_min={{ salary_min }}&salary_max={{ salary_max }}&visa_sponsorship={{ visa_sponsorship }}">{{ num }}</a>
+                                            <a class="page-link" href="?page={{ num }}&search={{ search_query }}&location={{ location }}&work_type={{ work_type }}&experience_level={{ experience_level }}&salary_min={{ salary_min }}&salary_max={{ salary_max }}&visa_sponsorship={{ visa_sponsorship }}&start_city={{ start_city }}&commute_miles={{ commute_miles }}">{{ num }}</a>
                                         </li>
                                     {% endif %}
                                 {% endfor %}
 
                                 {% if jobs.has_next %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ jobs.next_page_number }}&search={{ search_query }}&location={{ location }}&work_type={{ work_type }}&experience_level={{ experience_level }}&salary_min={{ salary_min }}&salary_max={{ salary_max }}&visa_sponsorship={{ visa_sponsorship }}">Next</a>
+                                        <a class="page-link" href="?page={{ jobs.next_page_number }}&search={{ search_query }}&location={{ location }}&work_type={{ work_type }}&experience_level={{ experience_level }}&salary_min={{ salary_min }}&salary_max={{ salary_max }}&visa_sponsorship={{ visa_sponsorship }}&start_city={{ start_city }}&commute_miles={{ commute_miles }}">Next</a>
                                     </li>
                                 {% endif %}
                             </ul>
@@ -281,6 +315,11 @@ function clearFilters() {
     document.querySelector('input[name="salary_min"]').value = '';
     document.querySelector('input[name="salary_max"]').value = '';
     document.querySelector('input[name="visa_sponsorship"]').checked = false;
+    // Clear commute fields
+    var sc = document.querySelector('select[name="start_city"]');
+    if (sc) sc.value = '';
+    var cm = document.querySelector('input[name="commute_miles"]');
+    if (cm) cm.value = '';
     
     // Submit the form to reload with no filters
     document.querySelector('form').submit();

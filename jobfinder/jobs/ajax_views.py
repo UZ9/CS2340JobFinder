@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from authentication.models import UserProfile, RecruiterProfile
+from profiles.models import Profile
 from .models import Job, JobApplication, Message
 import json
 
@@ -313,6 +314,53 @@ def get_conversations(request):
             'success': True,
             'conversations': conversations,
             'unread_count': total_unread
+        })
+    
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+def get_applicant_locations(request, job_id):
+    """AJAX endpoint to get applicant locations for map clustering"""
+    try:
+        # Verify recruiter owns this job
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.user_type != 'recruiter':
+            return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
+        
+        recruiter_profile = RecruiterProfile.objects.get(user_profile=user_profile)
+        job = get_object_or_404(Job, id=job_id, recruiter=recruiter_profile)
+        
+        # Get all applicants for this job
+        applications = job.applications.all()
+        
+        locations = []
+        for application in applications:
+            try:
+                # Get the applicant's profile
+                profile = Profile.objects.get(user=application.applicant)
+                
+                # Only include if location sharing is enabled and coordinates exist
+                if profile.show_location and profile.latitude and profile.longitude:
+                    locations.append({
+                        'lat': float(profile.latitude),
+                        'lng': float(profile.longitude),
+                        'name': application.applicant.get_full_name() or application.applicant.username,
+                        'location': profile.location or 'Location not specified',
+                        'status': application.get_status_display(),
+                        'status_code': application.status,
+                        'applied_at': application.applied_at.strftime('%b %d, %Y'),
+                        'application_id': application.id
+                    })
+            except Profile.DoesNotExist:
+                # Skip if profile doesn't exist
+                continue
+        
+        return JsonResponse({
+            'success': True,
+            'locations': locations,
+            'count': len(locations)
         })
     
     except Exception as e:
