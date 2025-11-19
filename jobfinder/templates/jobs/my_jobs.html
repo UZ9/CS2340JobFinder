@@ -41,8 +41,12 @@
                                             </a></li>
                                             <li><a class="dropdown-item" href="{% url 'jobs:recommended_candidates' job.id %}">
                                                 <i class="fas fa-users"></i> View recommended candidates
+                                            </a></li>
                                             <li><a class="dropdown-item" href="{% url 'jobs:application_pipeline' job.id %}">
                                                 <i class="fas fa-tasks"></i> Manage Applications ({{ job.applications.count }})
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="{% url 'jobs:applicants_map' job.id %}">
+                                                <i class="fas fa-map-marked-alt"></i> View Applicants Map
                                             </a></li>
                                             <li><a class="dropdown-item" href="{% url 'jobs:edit_job' job.id %}">
                                                 <i class="fas fa-edit"></i> Edit
