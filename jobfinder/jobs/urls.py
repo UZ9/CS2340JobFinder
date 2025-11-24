@@ -19,6 +19,9 @@ urlpatterns = [
     # Applicants map
     path('<int:job_id>/applicants-map/', views.applicants_map, name='applicants_map'),
     
+    # recommeded candidates
+    path('<int:job_id>/recommended-candidates/', views.recommended_candidates, name='recommended_candidates'),
+    
     # AJAX endpoints
     path('ajax/update-status/', ajax_views.update_application_status, name='ajax_update_status'),
     path('ajax/batch-update/', ajax_views.batch_update_status, name='ajax_batch_update'),

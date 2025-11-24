@@ -1,11 +1,11 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}Jobs - Job Finder{% endblock %}
 
 {% block content %}
-<div class="">
+<div class="container-fluid">
     <!-- Hero Section -->
-    <div class="gradient-background text-white py-5">
+    <div class="bg-primary text-white py-5">
         <div class="container">
             <div class="row">
                 <div class="col-lg-8 mx-auto text-center">
@@ -29,7 +29,6 @@
                         <label class="form-label">Location</label>
                         <input type="text" class="form-control" name="location" placeholder="City, State" value="{{ location }}">
                     </div>
-                    
                     <div class="col-md-2">
                         <label class="form-label">Work Type</label>
                         <select class="form-select" name="work_type">
@@ -65,7 +64,6 @@
                         <label class="form-label">Salary Max</label>
                         <input type="number" class="form-control" name="salary_max" placeholder="150000" value="{{ salary_max }}">
                     </div>
-                    
                     <div class="col-md-3">
                         <div class="form-check mt-3">
                             <input class="form-check-input" type="checkbox" name="visa_sponsorship" value="true" {% if visa_sponsorship == 'true' %}checked{% endif %}>
@@ -78,23 +76,6 @@
                         <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
                             <i class="fas fa-times"></i> Clear
                         </button>
-                    </div>
-                </div>
-
-                <!-- Commute / starting city filters -->
-                <div class="row g-3 mt-2 align-items-end">
-                    <div class="col-md-4">
-                        <label class="form-label">Starting City</label>
-                        <select class="form-select" name="start_city">
-                            <option value="">(Select city)</option>
-                            {% for city in city_choices %}
-                                <option value="{{ city }}" {% if start_city|lower == city|lower %}selected{% endif %}>{{ city }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Commute (miles)</label>
-                        <input type="number" min="0" step="1" class="form-control" name="commute_miles" placeholder="Miles" value="{{ commute_miles }}">
                     </div>
                 </div>
             </form>
@@ -110,7 +91,7 @@
                     <div class="btn-group" role="group">
                         <a href="{% url 'jobs:job_list' %}" class="btn btn-outline-primary active">All Jobs</a>
                         {% if user_type == 'recruiter' %}
-                            <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline-primary">My Job Postings</a>
+                            <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline-primary">My Jobs</a>
                             <a href="{% url 'jobs:add_job' %}" class="btn btn-success">+ Add Job</a>
                         {% elif user_type == 'job_seeker' %}
                             <a href="{% url 'jobs:my_applications' %}" class="btn btn-outline-primary">My Applications</a>
@@ -127,75 +108,67 @@
     </div>
     {% endif %}
 
-    <!-- Jobs List -->
+    <!-- Recommended Jobs Section -->
+    {% if recommended_jobs %}
     <div class="container mt-4">
-        <!-- Recommended Jobs -->
-        <div class="mb-4">
-            <h4 class="mb-3">Recommended jobs based on your skills</h4>
-            
-            <div class="recommended-jobs d-flex overflow-auto py-2" role="list" aria-label="Recommended jobs">
-                {# Render recommended job cards horizontally; each card is a link via stretched-link #}
-                {% if recommended_jobs %}
-                    {% for rjob in recommended_jobs %}
-                        <div class="card me-3 position-relative" style="min-width:240px; max-width:280px;" role="listitem" tabindex="0">
-                            <div class="card-body d-flex flex-column">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="card-title mb-1 text-truncate">{{ rjob.title }}</h6>
-                                    {% if rjob.visa_sponsorship %}
-                                        <span class="badge bg-success">Visa</span>
-                                    {% endif %}
-                                </div>
-                                <p class="card-subtitle mb-1 text-muted small text-truncate">{{ rjob.company }}</p>
-                                <div class="mb-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-map-marker-alt me-1"></i>
-                                        {% if rjob.location %}{{ rjob.location }}{% else %}Remote{% endif %}
-                                    </small>
-                                </div>
-                                <div class="mb-2">
-                                    <small class="fw-bold text-success">
-                                        <i class="fas fa-dollar-sign me-1"></i>{{ rjob.get_salary_range }}
-                                    </small>
-                                </div>
-
-                                <div class="mb-2 mt-auto">
-                                    {% for skill in rjob.get_skills_list|slice:":3" %}
-                                        <span class="badge bg-light text-dark me-1">{{ skill }}</span>
-                                    {% endfor %}
-                                    {% if rjob.get_skills_list|length > 3 %}
-                                        <span class="badge bg-light text-dark">+{{ rjob.get_skills_list|length|add:"-3" }} more</span>
-                                    {% endif %}
-                                </div>
-
-                                <a href="{% url 'jobs:job_detail' rjob.id %}" class="stretched-link" aria-label="View {{ rjob.title }} at {{ rjob.company }}"></a>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="d-flex align-items-center">
-                        <div class="text-muted">No recommendations yet, we'll show jobs here based on your skills.</div>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
         <div class="row">
             <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3>Available Jobs ({{ jobs.paginator.count }} found)</h3>
-                </div>
-
-                <!-- Map and distance filter -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h5 class="mb-0">Jobs Map</h5>
-                            <div class="d-flex align-items-center gap-2">
-                                <button id="locateBtn" class="btn btn-outline-primary btn-sm">Find My Location</button>
-                                <label class="mb-0">Radius (km): <span id="radiusLabel">25</span></label>
-                                <input id="radiusRange" type="range" min="1" max="200" value="25" style="width:200px">
+                <h4 class="mb-3">Recommended jobs based on your skills</h4>
+                <div class="row">
+                    {% for job in recommended_jobs %}
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title text-primary">{{ job.title }}</h6>
+                                <p class="card-subtitle mb-2 text-muted small"><i class="fas fa-building"></i> {{ job.company }}</p>
+                                <a href="{% url 'jobs:job_detail' job.id %}" class="btn btn-sm btn-outline-primary">View Details</a>
                             </div>
                         </div>
-                        <div id="jobs-map" style="height: 420px; border:1px solid #e6e6e6; border-radius:6px"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h4 class="mb-3">Recommended jobs based on your skills</h4>
+                <p class="text-muted">No recommendations yet, we'll show jobs here based on your skills.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Jobs List -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h3 class="mb-3">Available Jobs ({{ jobs.paginator.count }} found)</h3>
+
+                <!-- Interactive Jobs Map -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0"><i class="fas fa-map-marked-alt"></i> Jobs Map</h5>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="d-flex align-items-center">
+                                    <label class="me-2 mb-0 small">Commute Radius:</label>
+                                    <input type="range" class="form-range" id="radiusSlider" min="5" max="50" value="25" step="5" style="width: 120px;">
+                                    <span class="ms-2 badge bg-primary" id="radiusValue">25 miles</span>
+                                </div>
+                                <button class="btn btn-sm btn-primary" id="findMyLocation">
+                                    <i class="fas fa-location-arrow"></i> Find My Location
+                                </button>
+                            </div>
+                        </div>
+                        <div id="jobs-map" style="height: 450px; width: 100%; border: 1px solid #dee2e6; border-radius: 5px;"></div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i> Click markers to view job details. Use "Find My Location" to filter jobs within your commute radius.
+                            </small>
+                        </div>
                     </div>
                 </div>
 
@@ -266,7 +239,7 @@
                             <ul class="pagination">
                                 {% if jobs.has_previous %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ jobs.previous_page_number }}&search={{ search_query }}&location={{ location }}&work_type={{ work_type }}&experience_level={{ experience_level }}&salary_min={{ salary_min }}&salary_max={{ salary_max }}&visa_sponsorship={{ visa_sponsorship }}&start_city={{ start_city }}&commute_miles={{ commute_miles }}">Previous</a>
+                                        <a class="page-link" href="?page={{ jobs.previous_page_number }}&search={{ search_query }}&location={{ location }}&work_type={{ work_type }}&experience_level={{ experience_level }}&salary_min={{ salary_min }}&salary_max={{ salary_max }}&visa_sponsorship={{ visa_sponsorship }}">Previous</a>
                                     </li>
                                 {% endif %}
 
@@ -277,14 +250,14 @@
                                         </li>
                                     {% elif num > jobs.number|add:'-3' and num < jobs.number|add:'3' %}
                                         <li class="page-item">
-                                            <a class="page-link" href="?page={{ num }}&search={{ search_query }}&location={{ location }}&work_type={{ work_type }}&experience_level={{ experience_level }}&salary_min={{ salary_min }}&salary_max={{ salary_max }}&visa_sponsorship={{ visa_sponsorship }}&start_city={{ start_city }}&commute_miles={{ commute_miles }}">{{ num }}</a>
+                                            <a class="page-link" href="?page={{ num }}&search={{ search_query }}&location={{ location }}&work_type={{ work_type }}&experience_level={{ experience_level }}&salary_min={{ salary_min }}&salary_max={{ salary_max }}&visa_sponsorship={{ visa_sponsorship }}">{{ num }}</a>
                                         </li>
                                     {% endif %}
                                 {% endfor %}
 
                                 {% if jobs.has_next %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ jobs.next_page_number }}&search={{ search_query }}&location={{ location }}&work_type={{ work_type }}&experience_level={{ experience_level }}&salary_min={{ salary_min }}&salary_max={{ salary_max }}&visa_sponsorship={{ visa_sponsorship }}&start_city={{ start_city }}&commute_miles={{ commute_miles }}">Next</a>
+                                        <a class="page-link" href="?page={{ jobs.next_page_number }}&search={{ search_query }}&location={{ location }}&work_type={{ work_type }}&experience_level={{ experience_level }}&salary_min={{ salary_min }}&salary_max={{ salary_max }}&visa_sponsorship={{ visa_sponsorship }}">Next</a>
                                     </li>
                                 {% endif %}
                             </ul>
@@ -305,9 +278,201 @@
     </div>
 </div>
 
+<!-- Leaflet CSS and JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<style>
+.marker-cluster-small {
+    background-color: rgba(13, 110, 253, 0.6);
+}
+.marker-cluster-small div {
+    background-color: rgba(13, 110, 253, 0.8);
+}
+.marker-cluster-medium {
+    background-color: rgba(255, 193, 7, 0.6);
+}
+.marker-cluster-medium div {
+    background-color: rgba(255, 193, 7, 0.8);
+}
+.marker-cluster-large {
+    background-color: rgba(220, 53, 69, 0.6);
+}
+.marker-cluster-large div {
+    background-color: rgba(220, 53, 69, 0.8);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const mapEl = document.getElementById('jobs-map');
+    if (!mapEl || typeof L === 'undefined') return;
+    
+    const map = L.map('jobs-map').setView([39.8283, -98.5795], 4);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    
+    const markers = L.markerClusterGroup();
+    
+    const allJobs = [
+        {% for job in jobs %}
+        {% if job.latitude and job.longitude %}
+        {
+            id: {{ job.id }},
+            title: "{{ job.title|escapejs }}",
+            company: "{{ job.company|escapejs }}",
+            location: "{{ job.location|default:""|escapejs }}",
+            lat: {{ job.latitude }},
+            lng: {{ job.longitude }},
+            workType: "{{ job.get_work_type_display|escapejs }}",
+            salary: "{{ job.get_salary_range|escapejs }}",
+            detailUrl: "{% url 'jobs:job_detail' job.id %}"
+        },
+        {% endif %}
+        {% endfor %}
+    ];
+    
+    if (allJobs.length === 0) {
+        mapEl.innerHTML = '<div class="alert alert-info m-3">No jobs with location data available.</div>';
+        return;
+    }
+    
+    let userLocation = null;
+    let userMarker = null;
+    let radiusCircle = null;
+    
+    function createJobMarker(job) {
+        let color = '#0d6efd';
+        if (job.workType === 'Remote') color = '#198754';
+        else if (job.workType === 'Hybrid') color = '#ffc107';
+        
+        const icon = L.divIcon({
+            className: 'custom-marker',
+            html: `<div style="background-color: ${color}; width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+        
+        const marker = L.marker([job.lat, job.lng], { icon: icon });
+        marker.bindPopup(`
+            <div style="min-width: 220px;">
+                <h6 class="mb-2"><strong>${job.title}</strong></h6>
+                <p class="mb-1 small"><i class="fas fa-building"></i> ${job.company}</p>
+                <p class="mb-1 small"><i class="fas fa-map-marker-alt"></i> ${job.location}</p>
+                <p class="mb-2"><span class="badge bg-secondary">${job.workType}</span></p>
+                <p class="mb-2 small text-success"><strong>${job.salary}</strong></p>
+                <a href="${job.detailUrl}" class="btn btn-sm btn-primary w-100">View Details</a>
+            </div>
+        `);
+        return marker;
+    }
+    
+    function displayJobs(jobs) {
+        markers.clearLayers();
+        jobs.forEach(job => markers.addLayer(createJobMarker(job)));
+        map.addLayer(markers);
+        if (jobs.length > 0) {
+            map.fitBounds(markers.getBounds(), { padding: [50, 50], maxZoom: 12 });
+        }
+    }
+    
+    displayJobs(allJobs);
+    
+    // Haversine distance in miles
+    function calcDistance(lat1, lon1, lat2, lon2) {
+        const R = 3958.8;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+    
+    document.getElementById('findMyLocation').addEventListener('click', function() {
+        if (!navigator.geolocation) {
+            alert('Geolocation not supported by your browser');
+            return;
+        }
+        
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finding...';
+        this.disabled = true;
+        
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                
+                if (userMarker) map.removeLayer(userMarker);
+                if (radiusCircle) map.removeLayer(radiusCircle);
+                
+                const radius = parseInt(document.getElementById('radiusSlider').value);
+                
+                radiusCircle = L.circle([userLocation.lat, userLocation.lng], {
+                    color: '#0d6efd',
+                    fillColor: '#0d6efd',
+                    fillOpacity: 0.1,
+                    radius: radius * 1609.34
+                }).addTo(map);
+                
+                userMarker = L.marker([userLocation.lat, userLocation.lng], {
+                    icon: L.divIcon({
+                        className: 'user-marker',
+                        html: '<div style="background-color: #dc3545; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;"><i class="fas fa-user" style="color: white; font-size: 12px;"></i></div>',
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    })
+                }).addTo(map).bindPopup('<strong>Your Location</strong>').openPopup();
+                
+                const filtered = allJobs.filter(job => 
+                    calcDistance(userLocation.lat, userLocation.lng, job.lat, job.lng) <= radius
+                );
+                
+                displayJobs(filtered);
+                map.setView([userLocation.lat, userLocation.lng], 10);
+                
+                this.innerHTML = '<i class="fas fa-check"></i> Location Found (' + filtered.length + ' jobs)';
+                this.disabled = false;
+            },
+            () => {
+                alert('Unable to retrieve your location');
+                this.innerHTML = '<i class="fas fa-location-arrow"></i> Find My Location';
+                this.disabled = false;
+            }
+        );
+    });
+    
+    const slider = document.getElementById('radiusSlider');
+    const sliderVal = document.getElementById('radiusValue');
+    slider.addEventListener('input', function() {
+        sliderVal.textContent = this.value + ' miles';
+        if (userLocation && radiusCircle) {
+            map.removeLayer(radiusCircle);
+            radiusCircle = L.circle([userLocation.lat, userLocation.lng], {
+                color: '#0d6efd',
+                fillColor: '#0d6efd',
+                fillOpacity: 0.1,
+                radius: parseInt(this.value) * 1609.34
+            }).addTo(map);
+            
+            const filtered = allJobs.filter(job => 
+                calcDistance(userLocation.lat, userLocation.lng, job.lat, job.lng) <= parseInt(this.value)
+            );
+            displayJobs(filtered);
+            document.getElementById('findMyLocation').innerHTML = 
+                '<i class="fas fa-check"></i> Location Found (' + filtered.length + ' jobs)';
+        }
+    });
+});
+</script>
+
 <script>
 function clearFilters() {
-    // Clear all form inputs
     document.querySelector('input[name="search"]').value = '';
     document.querySelector('input[name="location"]').value = '';
     document.querySelector('select[name="work_type"]').value = '';
@@ -315,13 +480,6 @@ function clearFilters() {
     document.querySelector('input[name="salary_min"]').value = '';
     document.querySelector('input[name="salary_max"]').value = '';
     document.querySelector('input[name="visa_sponsorship"]').checked = false;
-    // Clear commute fields
-    var sc = document.querySelector('select[name="start_city"]');
-    if (sc) sc.value = '';
-    var cm = document.querySelector('input[name="commute_miles"]');
-    if (cm) cm.value = '';
-    
-    // Submit the form to reload with no filters
     document.querySelector('form').submit();
 }
 </script>

@@ -43,7 +43,14 @@
                             <span class="badge bg-primary" id="applicant-count">Loading...</span>
                         </div>
                     </div>
-                    <div id="applicants-map" style="height: 600px; width: 100%;"></div>
+                    <div id="applicants-map" style="height: 600px; width: 100%; position: relative;">
+                        <div id="map-loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000;">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading applicant locations...</p>
+                        </div>
+                    </div>
                     <div class="mt-3">
                         <small class="text-muted">
                             <i class="bi bi-info-circle"></i> Only showing applicants who have enabled location sharing in their profile settings.
@@ -119,14 +126,27 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize the map
-        const map = L.map('applicants-map').setView([39.8283, -98.5795], 4); // Center of US
+        if (typeof L === 'undefined') {
+            console.error('Leaflet library not loaded!');
+            document.getElementById('applicants-map').innerHTML = 
+                '<div class="alert alert-danger">Error: Map library failed to load. Please refresh the page.</div>';
+            return;
+        }
+        
+        let map;
+        try {
+            map = L.map('applicants-map').setView([39.8283, -98.5795], 4); // Center of US
 
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+        } catch (error) {
+            console.error('Error initializing map:', error);
+            document.getElementById('applicants-map').innerHTML = 
+                '<div class="alert alert-danger">Error initializing map: ' + error.message + '</div>';
+            return;
+        }
 
         // Create marker cluster group
         const markers = L.markerClusterGroup({
@@ -162,24 +182,92 @@
             return badgeClasses[status] || 'bg-secondary';
         }
 
-        // Fetch applicant locations
-        fetch("{% url 'jobs:ajax_applicant_locations' job.id %}")
-            .then(response => response.json())
+        const url = "{% url 'jobs:ajax_applicant_locations' job.id %}";
+        console.log('=== Starting fetch for applicant locations ===');
+        console.log('URL:', url);
+        console.log('Job ID:', {{ job.id }});
+        console.log('Current user authenticated:', {% if user.is_authenticated %}true{% else %}false{% endif %});
+        
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => {
+                console.error('=== Request timeout after 10 seconds ===');
+                reject(new Error('Request timeout after 10 seconds'));
+            }, 10000);
+        });
+        
+        Promise.race([
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                },
+                credentials: 'same-origin',
+                redirect: 'follow'
+            }),
+            timeoutPromise
+        ])
+            .then(response => {
+                if (response instanceof Response) {
+                    console.log('Response status:', response.status);
+                    console.log('Response URL:', response.url);
+                    console.log('Response type:', response.type);
+                    console.log('Content-Type:', response.headers.get('content-type'));
+                    
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && !contentType.includes('application/json')) {
+                        return response.text().then(text => {
+                            console.error('Non-JSON response received:', text.substring(0, 500));
+                            throw new Error(`Expected JSON but got ${contentType}. This might be a redirect to login page.`);
+                        });
+                    }
+                    
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            console.error('Error response body:', text.substring(0, 500));
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        });
+                    }
+                    
+                    return response.json().catch(err => {
+                        console.error('JSON parse error:', err);
+                        return response.text().then(text => {
+                            console.error('Response text:', text.substring(0, 500));
+                            throw new Error('Failed to parse JSON response. Response might be HTML.');
+                        });
+                    });
+                } else {
+                    throw new Error('Unexpected response type');
+                }
+            })
             .then(data => {
+                if (!data) {
+                    throw new Error('No data received');
+                }
+                console.log('Received data:', data);
+                
+                const loadingIndicator = document.getElementById('map-loading');
+                if (loadingIndicator) {
+                    loadingIndicator.remove();
+                }
+                
                 if (data.success) {
                     const locations = data.locations;
                     
-                    // Update count badge
                     document.getElementById('applicant-count').textContent = 
                         `${data.count} applicant${data.count !== 1 ? 's' : ''} with location sharing enabled`;
 
                     if (locations.length === 0) {
-                        document.getElementById('applicants-map').innerHTML = 
-                            '<div class="alert alert-info">No applicants have enabled location sharing yet.</div>';
+                        const infoDiv = document.createElement('div');
+                        infoDiv.className = 'alert alert-info';
+                        infoDiv.style.position = 'absolute';
+                        infoDiv.style.top = '10px';
+                        infoDiv.style.left = '10px';
+                        infoDiv.style.zIndex = '1000';
+                        infoDiv.textContent = 'No applicants have enabled location sharing yet.';
+                        document.getElementById('applicants-map').appendChild(infoDiv);
                         return;
                     }
 
-                    // Add markers for each applicant
                     locations.forEach(location => {
                         const color = getStatusColor(location.status_code);
                         const badgeClass = getStatusBadgeClass(location.status_code);
@@ -205,7 +293,7 @@
                                 <p class="mb-1 text-muted" style="font-size: 0.85em;">
                                     <i class="bi bi-calendar"></i> Applied: ${location.applied_at}
                                 </p>
-                                <a href="{% url 'jobs:application_pipeline' job.id %}" class="btn btn-sm btn-primary mt-2">
+                                <a href="{% url 'jobs:application_pipeline' job.id %}" class="btn btn-sm btn-primary mt-2" style="color: white !important;">
                                     View in Pipeline
                                 </a>
                             </div>
@@ -224,14 +312,36 @@
                     }
                 } else {
                     console.error('Error fetching applicant locations:', data.error);
-                    document.getElementById('applicants-map').innerHTML = 
-                        '<div class="alert alert-danger">Error loading applicant locations.</div>';
+                    const loadingIndicator = document.getElementById('map-loading');
+                    if (loadingIndicator) {
+                        loadingIndicator.remove();
+                    }
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'alert alert-danger';
+                    errorDiv.style.position = 'absolute';
+                    errorDiv.style.top = '10px';
+                    errorDiv.style.left = '10px';
+                    errorDiv.style.zIndex = '1000';
+                    errorDiv.textContent = 'Error loading applicant locations: ' + (data.error || 'Unknown error');
+                    document.getElementById('applicants-map').appendChild(errorDiv);
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('applicants-map').innerHTML = 
-                    '<div class="alert alert-danger">Error loading applicant locations.</div>';
+                console.error('Error fetching applicant locations:', error);
+                console.error('Error stack:', error.stack);
+                const loadingIndicator = document.getElementById('map-loading');
+                if (loadingIndicator) {
+                    loadingIndicator.remove();
+                }
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger';
+                errorDiv.style.position = 'absolute';
+                errorDiv.style.top = '10px';
+                errorDiv.style.left = '10px';
+                errorDiv.style.zIndex = '1000';
+                errorDiv.style.maxWidth = '90%';
+                errorDiv.innerHTML = '<strong>Error loading applicant locations:</strong><br>' + error.message + '<br><small>Check browser console for details.</small>';
+                document.getElementById('applicants-map').appendChild(errorDiv);
             });
     });
 </script>
