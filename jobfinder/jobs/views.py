@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from authentication.models import UserProfile, RecruiterProfile, JobSeekerProfile
+from profiles.models import Profile
 from .models import Job, JobApplication
 from .forms import JobForm, JobApplicationForm
 import re
@@ -147,7 +148,7 @@ def job_list(request):
             raw_skills = ''
             user_skills_source = 'none'
             try:
-                user_profile_visible = UserProfileVisible.objects.filter(user=request.user).first()
+                user_profile_visible = Profile.objects.filter(user=request.user).first()
                 if user_profile_visible and user_profile_visible.skills:
                     raw_skills = user_profile_visible.skills
                     user_skills_source = 'profiles.Profile'
@@ -174,7 +175,7 @@ def job_list(request):
                     poster_skills = ''
                     try:
                         recruiter_user = j.recruiter.user_profile.user
-                        poster = UserProfileVisible.objects.filter(user=recruiter_user).first()
+                        poster = Profile.objects.filter(user=recruiter_user).first()
                         if poster and poster.skills:
                             poster_skills = poster.skills
                     except Exception:
@@ -488,3 +489,74 @@ def applicants_map(request, job_id):
     }
     
     return render(request, 'jobs/applicants_map.html', context)
+
+
+@login_required
+def recommended_candidates(request, job_id):
+    """View recommended candidates for a job based on skill matching (recruiters only)"""
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.user_type != 'recruiter':
+            messages.error(request, "Only recruiters can view recommended candidates.")
+            return redirect('jobs:job_list')
+        
+        recruiter_profile = RecruiterProfile.objects.get(user_profile=user_profile)
+    except (UserProfile.DoesNotExist, RecruiterProfile.DoesNotExist):
+        messages.error(request, "Recruiter profile not found.")
+        return redirect('jobs:job_list')
+    
+    job = get_object_or_404(Job, id=job_id, recruiter=recruiter_profile)
+    
+    poster_skills = ''
+    try:
+        recruiter_user = job.recruiter.user_profile.user
+        poster = Profile.objects.filter(user=recruiter_user).first()
+        if poster and poster.skills:
+            poster_skills = poster.skills
+    except Exception:
+        poster_skills = ''
+    
+    admin_skills = job.skills_required or ''
+    
+    combined_raw = ','.join([s for s in (poster_skills, admin_skills) if s])
+    
+    def tokenize(s):
+        return {tok.strip().lower() for tok in re.split(r"[,;/\\s]+", s) if tok.strip()}
+    
+    job_skills = tokenize(combined_raw)
+    
+    job_seeker_users = UserProfile.objects.filter(user_type='job_seeker').values_list('user_id', flat=True)
+    candidate_profiles = Profile.objects.filter(user_id__in=job_seeker_users)
+    
+    recommended = []
+    for profile in candidate_profiles:
+        if not profile.skills:
+            continue
+        
+        candidate_skills = tokenize(profile.skills)
+        overlap = len(job_skills & candidate_skills)
+        
+        if overlap > 0:
+            try:
+                user_profile_obj = UserProfile.objects.get(user=profile.user)
+                jobseeker_profile = JobSeekerProfile.objects.filter(user_profile=user_profile_obj).first()
+            except (UserProfile.DoesNotExist, JobSeekerProfile.DoesNotExist):
+                jobseeker_profile = None
+            
+            skills_list = [s.strip() for s in re.split(r"[,;/\\s]+", profile.skills) if s.strip()]
+            
+            recommended.append({
+                'user': profile.user,
+                'jobseeker_profile': jobseeker_profile,
+                'overlap': overlap,
+                'skills_list': skills_list,
+            })
+    
+    recommended.sort(key=lambda x: x['overlap'], reverse=True)
+    
+    context = {
+        'job': job,
+        'recommended': recommended,
+    }
+    
+    return render(request, 'jobs/recommended_candidates.html', context)

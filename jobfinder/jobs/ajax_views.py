@@ -325,12 +325,23 @@ def get_applicant_locations(request, job_id):
     """AJAX endpoint to get applicant locations for map clustering"""
     try:
         # Verify recruiter owns this job
-        user_profile = UserProfile.objects.get(user=request.user)
-        if user_profile.user_type != 'recruiter':
-            return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+        except UserProfile.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'User profile not found'}, status=403)
         
-        recruiter_profile = RecruiterProfile.objects.get(user_profile=user_profile)
-        job = get_object_or_404(Job, id=job_id, recruiter=recruiter_profile)
+        if user_profile.user_type != 'recruiter':
+            return JsonResponse({'success': False, 'error': 'Not authorized - only recruiters can view applicant locations'}, status=403)
+        
+        try:
+            recruiter_profile = RecruiterProfile.objects.get(user_profile=user_profile)
+        except RecruiterProfile.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Recruiter profile not found'}, status=403)
+        
+        try:
+            job = Job.objects.get(id=job_id, recruiter=recruiter_profile)
+        except Job.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Job not found or you do not have permission to view it'}, status=404)
         
         # Get all applicants for this job
         applications = job.applications.all()
@@ -342,7 +353,7 @@ def get_applicant_locations(request, job_id):
                 profile = Profile.objects.get(user=application.applicant)
                 
                 # Only include if location sharing is enabled and coordinates exist
-                if profile.show_location and profile.latitude and profile.longitude:
+                if profile.show_location and profile.latitude is not None and profile.longitude is not None:
                     locations.append({
                         'lat': float(profile.latitude),
                         'lng': float(profile.longitude),
@@ -356,6 +367,9 @@ def get_applicant_locations(request, job_id):
             except Profile.DoesNotExist:
                 # Skip if profile doesn't exist
                 continue
+            except (ValueError, TypeError) as e:
+                print(f"Invalid coordinates for user {application.applicant.id}: {e}")
+                continue
         
         return JsonResponse({
             'success': True,
@@ -364,5 +378,8 @@ def get_applicant_locations(request, job_id):
         })
     
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+        import traceback
+        print(f"Error in get_applicant_locations: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({'success': False, 'error': f'Server error: {str(e)}'}, status=500)
 
